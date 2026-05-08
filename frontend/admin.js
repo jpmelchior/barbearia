@@ -25,6 +25,9 @@ const blocksList = document.getElementById("blocksList");
 
 const tabs = document.querySelectorAll(".tab");
 
+const perDayPageSize = 5;
+const dayPages = {};
+
 let authHeader = localStorage.getItem("adminAuth") || "";
 let savedUser = localStorage.getItem("adminUser") || "";
 let savedPassword = localStorage.getItem("adminPassword") || "";
@@ -217,6 +220,20 @@ function renderGroupedAppointments(container, list, emptyMessage) {
   Object.keys(grouped)
     .sort()
     .forEach((date) => {
+      const items = grouped[date];
+
+      if (!dayPages[date]) {
+        dayPages[date] = 1;
+      }
+
+      const totalPages = Math.ceil(items.length / perDayPageSize);
+      const currentPage = Math.min(dayPages[date], totalPages);
+
+      dayPages[date] = currentPage;
+
+      const start = (currentPage - 1) * perDayPageSize;
+      const visibleItems = items.slice(start, start + perDayPageSize);
+
       const daySection = document.createElement("section");
       daySection.className = "day-group";
 
@@ -225,12 +242,12 @@ function renderGroupedAppointments(container, list, emptyMessage) {
 
       dayHeader.innerHTML = `
         <strong>${formatDayHeader(date)}</strong>
-        <span>${grouped[date].length} horário(s)</span>
+        <span>${items.length} horário(s)</span>
       `;
 
       daySection.appendChild(dayHeader);
 
-      grouped[date].forEach((item) => {
+      visibleItems.forEach((item) => {
         const card = document.createElement("article");
         card.className = "appointment-card";
 
@@ -261,6 +278,25 @@ function renderGroupedAppointments(container, list, emptyMessage) {
         daySection.appendChild(card);
       });
 
+      if (totalPages > 1) {
+        const pagination = document.createElement("div");
+        pagination.className = "day-pagination";
+
+        pagination.innerHTML = `
+          <button class="day-prev" data-date="${date}" ${currentPage === 1 ? "disabled" : ""}>
+            Anterior
+          </button>
+
+          <span>Página ${currentPage} de ${totalPages}</span>
+
+          <button class="day-next" data-date="${date}" ${currentPage === totalPages ? "disabled" : ""}>
+            Próxima
+          </button>
+        `;
+
+        daySection.appendChild(pagination);
+      }
+
       container.appendChild(daySection);
     });
 
@@ -271,6 +307,22 @@ function renderGroupedAppointments(container, list, emptyMessage) {
       if (!confirm("Deseja cancelar este agendamento?")) return;
 
       await cancelAppointment(id);
+    });
+  });
+
+  document.querySelectorAll(".day-prev").forEach((button) => {
+    button.addEventListener("click", () => {
+      const date = button.dataset.date;
+      dayPages[date] = Math.max(1, (dayPages[date] || 1) - 1);
+      renderAppointments();
+    });
+  });
+
+  document.querySelectorAll(".day-next").forEach((button) => {
+    button.addEventListener("click", () => {
+      const date = button.dataset.date;
+      dayPages[date] = (dayPages[date] || 1) + 1;
+      renderAppointments();
     });
   });
 }
