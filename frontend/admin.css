@@ -279,6 +279,27 @@ button:hover {
   padding: 9px 12px;
 }
 
+.day-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.day-pagination span {
+  color: #d4af37;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.day-pagination button {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
 .block-form {
   display: flex;
   flex-direction: column;
@@ -410,6 +431,18 @@ button:hover {
 
   .service-box strong {
     font-size: 17px;
+  }
+
+  .day-pagination {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .day-pagination button,
+  .day-pagination span {
+    width: 100%;
+    text-align: center;
   }
 
   .cancel-btn,
