@@ -26,8 +26,14 @@ const blocksList = document.getElementById("blocksList");
 const tabs = document.querySelectorAll(".tab");
 
 let authHeader = localStorage.getItem("adminAuth") || "";
+let savedUser = localStorage.getItem("adminUser") || "";
+let savedPassword = localStorage.getItem("adminPassword") || "";
+
 let appointments = [];
 let blocks = [];
+
+adminUser.value = savedUser;
+adminPassword.value = savedPassword;
 
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
@@ -42,6 +48,9 @@ function showPanel() {
 function showLogin() {
   adminPanel.classList.add("hidden");
   loginBox.classList.remove("hidden");
+
+  adminUser.value = localStorage.getItem("adminUser") || adminUser.value;
+  adminPassword.value = localStorage.getItem("adminPassword") || adminPassword.value;
 }
 
 function escapeHTML(value) {
@@ -84,16 +93,6 @@ function formatDayHeader(dateString) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
 
   return `${weekDay} ${day}/${month}`;
-}
-
-function formatSmallDate(dateString) {
-  if (!dateString) return "-";
-
-  const date = new Date(`${dateString}T00:00:00`);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-
-  return `${day}/${month}`;
 }
 
 function formatTime(time) {
@@ -150,6 +149,8 @@ async function login(user, password) {
   }
 
   localStorage.setItem("adminAuth", authHeader);
+  localStorage.setItem("adminUser", user);
+  localStorage.setItem("adminPassword", password);
 }
 
 async function loadAll() {
@@ -461,7 +462,6 @@ loginForm.addEventListener("submit", async (event) => {
 refreshBtn.addEventListener("click", loadAll);
 
 logoutBtn.addEventListener("click", () => {
-  localStorage.removeItem("adminAuth");
   authHeader = "";
   showLogin();
 });
