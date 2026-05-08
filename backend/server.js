@@ -31,9 +31,17 @@ function adminAuth(req, res, next) {
   next();
 }
 
+function getBrazilNow() {
+  return new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "America/Sao_Paulo",
+    })
+  );
+}
+
 function getTodayBrazilDate() {
   return new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Sao_Paulo"
+    timeZone: "America/Sao_Paulo",
   });
 }
 
@@ -42,7 +50,7 @@ function getBrazilHour() {
     new Date().toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",
       hour: "2-digit",
-      hour12: false
+      hour12: false,
     })
   );
 }
@@ -54,7 +62,6 @@ function isWeekday(dateString) {
 }
 
 function generateTimes(dateString) {
-  const times = [];
   const today = getTodayBrazilDate();
   const currentHour = getBrazilHour();
 
@@ -64,6 +71,8 @@ function generateTimes(dateString) {
     startHour = Math.max(OPENING_HOUR, currentHour + 1);
   }
 
+  const times = [];
+
   for (let hour = startHour; hour < CLOSING_HOUR; hour++) {
     times.push(`${String(hour).padStart(2, "0")}:00`);
   }
@@ -72,7 +81,46 @@ function generateTimes(dateString) {
 }
 
 app.get("/", (req, res) => {
-  res.json({ message: "API da barbearia funcionando" });
+  res.json({
+    message: "API da barbearia funcionando",
+    todayBrazil: getTodayBrazilDate(),
+    hourBrazil: getBrazilHour(),
+  });
+});
+
+app.get("/api/today", (req, res) => {
+  res.json({
+    date: getTodayBrazilDate(),
+    hour: getBrazilHour(),
+    now: getBrazilNow(),
+  });
+});
+
+app.get("/api/days", (req, res) => {
+  const today = getTodayBrazilDate();
+  const days = [];
+
+  let index = 0;
+
+  while (days.length < 30) {
+    const date = new Date(`${today}T12:00:00`);
+    date.setDate(date.getDate() + index);
+
+    const dateString = date.toISOString().split("T")[0];
+
+    if (isWeekday(dateString)) {
+      days.push({
+        date: dateString,
+        weekday: date.toLocaleDateString("pt-BR", { weekday: "short" }),
+        day: String(date.getDate()).padStart(2, "0"),
+        month: String(date.getMonth() + 1).padStart(2, "0"),
+      });
+    }
+
+    index++;
+  }
+
+  res.json(days);
 });
 
 app.get("/api/times", (req, res) => {
@@ -87,16 +135,16 @@ app.get("/api/times", (req, res) => {
   if (date < today) {
     return res.json({
       date,
-      available: [],
-      message: "Não é possível agendar em datas anteriores."
+      times: [],
+      message: "Não é possível agendar em datas anteriores.",
     });
   }
 
   if (!isWeekday(date)) {
     return res.json({
       date,
-      available: [],
-      message: "Agendamentos apenas de segunda a sexta."
+      times: [],
+      message: "Agendamentos apenas de segunda a sexta.",
     });
   }
 
@@ -104,30 +152,56 @@ app.get("/api/times", (req, res) => {
 
   db.all("SELECT time FROM appointments WHERE date = ?", [date], (err, appointments) => {
     if (err) {
-      return res.status(500).json({ error: "Erro ao buscar horários." });
+      return res.status(500).json({ error: "Erro ao buscar agendamentos." });
     }
 
-    db.all("SELECT time FROM blocked_times WHERE date = ?", [date], (err, blocks) => {
+    db.all("SELECT time, reason FROM blocked_times WHERE date = ?", [date], (err, blocks) => {
       if (err) {
         return res.status(500).json({ error: "Erro ao buscar bloqueios." });
       }
 
-      const bookedTimes = appointments.map((row) => row.time);
-      const blockedAllDay = blocks.some((row) => row.time === null || row.time === "");
-      const blockedTimes = blocks.filter((row) => row.time).map((row) => row.time);
+      const bookedTimes = appointments.map((item) => item.time);
+      const blockedAllDay = blocks.find((item) => !item.time);
+      const blockedTimes = blocks.filter((item) => item.time);
 
-      const unavailable = [...bookedTimes, ...blockedTimes];
+      const times = allTimes.map((time) => {
+        const blocked = blockedTimes.find((item) => item.time === time);
+        const booked = bookedTimes.includes(time);
 
-      const available = blockedAllDay
-        ? []
-        : allTimes.filter((time) => !unavailable.includes(time));
+        if (blockedAllDay) {
+          return {
+            time,
+            available: false,
+            reason: blockedAllDay.reason || "Dia indisponível",
+          };
+        }
+
+        if (booked) {
+          return {
+            time,
+            available: false,
+            reason: "Horário indisponível",
+          };
+        }
+
+        if (blocked) {
+          return {
+            time,
+            available: false,
+            reason: blocked.reason || "Horário bloqueado",
+          };
+        }
+
+        return {
+          time,
+          available: true,
+          reason: null,
+        };
+      });
 
       res.json({
         date,
-        available,
-        booked: bookedTimes,
-        blocked: blockedTimes,
-        blockedAllDay
+        times,
       });
     });
   });
@@ -143,29 +217,43 @@ app.post("/api/appointments", (req, res) => {
   const today = getTodayBrazilDate();
 
   if (date < today) {
-    return res.status(400).json({ error: "Não é possível agendar em datas anteriores." });
+    return res.status(400).json({
+      error: "Não é possível agendar em datas anteriores.",
+    });
   }
 
   if (!isWeekday(date)) {
-    return res.status(400).json({ error: "Agendamentos apenas de segunda a sexta." });
+    return res.status(400).json({
+      error: "Agendamentos apenas de segunda a sexta.",
+    });
   }
 
   const availableTimes = generateTimes(date);
 
   if (!availableTimes.includes(time)) {
-    return res.status(400).json({ error: "Esse horário não está mais disponível." });
+    return res.status(400).json({
+      error: "Esse horário já passou ou não está disponível.",
+    });
   }
 
-  db.all("SELECT time FROM blocked_times WHERE date = ?", [date], (err, blocks) => {
+  db.all("SELECT time, reason FROM blocked_times WHERE date = ?", [date], (err, blocks) => {
     if (err) {
       return res.status(500).json({ error: "Erro ao verificar bloqueios." });
     }
 
-    const blockedAllDay = blocks.some((row) => row.time === null || row.time === "");
-    const blockedTimes = blocks.filter((row) => row.time).map((row) => row.time);
+    const blockedAllDay = blocks.find((item) => !item.time);
+    const blockedTime = blocks.find((item) => item.time === time);
 
-    if (blockedAllDay || blockedTimes.includes(time)) {
-      return res.status(400).json({ error: "Esse horário está bloqueado pelo barbeiro." });
+    if (blockedAllDay) {
+      return res.status(400).json({
+        error: blockedAllDay.reason || "Este dia está indisponível.",
+      });
+    }
+
+    if (blockedTime) {
+      return res.status(400).json({
+        error: blockedTime.reason || "Este horário está indisponível.",
+      });
     }
 
     db.run(
@@ -178,10 +266,14 @@ app.post("/api/appointments", (req, res) => {
       function (err) {
         if (err) {
           if (err.message.includes("UNIQUE")) {
-            return res.status(409).json({ error: "Esse horário já foi agendado." });
+            return res.status(409).json({
+              error: "Horário indisponível.",
+            });
           }
 
-          return res.status(500).json({ error: "Erro ao criar agendamento." });
+          return res.status(500).json({
+            error: "Erro ao criar agendamento.",
+          });
         }
 
         res.status(201).json({
@@ -192,8 +284,8 @@ app.post("/api/appointments", (req, res) => {
             phone,
             service,
             date,
-            time
-          }
+            time,
+          },
         });
       }
     );
@@ -215,9 +307,7 @@ app.get("/api/admin/appointments", adminAuth, (req, res) => {
 });
 
 app.delete("/api/admin/appointments/:id", adminAuth, (req, res) => {
-  const { id } = req.params;
-
-  db.run("DELETE FROM appointments WHERE id = ?", [id], function (err) {
+  db.run("DELETE FROM appointments WHERE id = ?", [req.params.id], function (err) {
     if (err) {
       return res.status(500).json({ error: "Erro ao cancelar agendamento." });
     }
@@ -247,12 +337,16 @@ app.post("/api/admin/blocks", adminAuth, (req, res) => {
     return res.status(400).json({ error: "Informe a data." });
   }
 
+  if (!reason) {
+    return res.status(400).json({ error: "Informe o motivo do bloqueio." });
+  }
+
   db.run(
     "INSERT INTO blocked_times (date, time, reason) VALUES (?, ?, ?)",
-    [date, time || null, reason || "Indisponível"],
+    [date, time || null, reason],
     function (err) {
       if (err) {
-        return res.status(500).json({ error: "Erro ao bloquear horário." });
+        return res.status(500).json({ error: "Erro ao criar bloqueio." });
       }
 
       res.status(201).json({
@@ -261,17 +355,15 @@ app.post("/api/admin/blocks", adminAuth, (req, res) => {
           id: this.lastID,
           date,
           time: time || null,
-          reason: reason || "Indisponível"
-        }
+          reason,
+        },
       });
     }
   );
 });
 
 app.delete("/api/admin/blocks/:id", adminAuth, (req, res) => {
-  const { id } = req.params;
-
-  db.run("DELETE FROM blocked_times WHERE id = ?", [id], function (err) {
+  db.run("DELETE FROM blocked_times WHERE id = ?", [req.params.id], function (err) {
     if (err) {
       return res.status(500).json({ error: "Erro ao remover bloqueio." });
     }
