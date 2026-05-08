@@ -1,4 +1,3 @@
-
 // frontend/script.js
 
 const API_URL = "https://barbearia-ygxt.onrender.com/api";
@@ -29,7 +28,6 @@ function formatISODate(date) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-  return date.toISOString().split("T")[0];
 }
 
 function formatWeekday(date) {
@@ -49,13 +47,53 @@ function setEmptyTimes(text) {
   emptyText.textContent = text;
 
   timesContainer.appendChild(emptyText);
-  return date.toLocaleDateString("pt-BR", {
-    weekday: "short",
-    timeZone: "America/Sao_Paulo"
-  });
 }
 
 function createPaginationControls() {
+  const oldControls = document.querySelector(".pagination-controls");
+
+  if (oldControls) {
+    oldControls.remove();
+  }
+
+  const controls = document.createElement("div");
+  controls.className = "pagination-controls";
+
+  const prevButton = document.createElement("button");
+  prevButton.type = "button";
+  prevButton.className = "pagination-btn";
+  prevButton.textContent = "← Dias anteriores";
+
+  const nextButton = document.createElement("button");
+  nextButton.type = "button";
+  nextButton.className = "pagination-btn";
+  nextButton.textContent = "Próximos dias →";
+
+  if (currentPage === 0) {
+    prevButton.disabled = true;
+    prevButton.classList.add("disabled");
+  }
+
+  prevButton.addEventListener("click", () => {
+    if (currentPage > 0) {
+      currentPage--;
+      generateDays();
+      resetSelectedTime();
+    }
+  });
+
+  nextButton.addEventListener("click", () => {
+    currentPage++;
+    generateDays();
+    resetSelectedTime();
+  });
+
+  controls.appendChild(prevButton);
+  controls.appendChild(nextButton);
+
+  daysContainer.after(controls);
+}
+
 function resetSelectedTime() {
   dateInput.value = "";
   timeInput.value = "";
@@ -99,22 +137,23 @@ function createDayButton(date) {
   });
 
   return button;
-  timesContainer.innerHTML = `
-    <p class="empty-text">Escolha um dia primeiro.</p>
-  `;
 }
 
 function generateDays() {
+  daysContainer.innerHTML = "";
+
+  const oldControls = document.querySelector(".pagination-controls");
+
+  if (oldControls) {
+    oldControls.remove();
   }
 
   const today = new Date();
   const startBusinessDay = currentPage * DAYS_PER_PAGE;
-  const startIndex = currentPage * DAYS_PER_PAGE;
 
   let added = 0;
   let skipped = 0;
   let index = 0;
-  let index = startIndex;
 
   while (added < DAYS_PER_PAGE) {
     const date = new Date(today);
@@ -131,74 +170,46 @@ function generateDays() {
         added++;
       }
     }
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      const dateString = formatISODate(date);
 
     index++;
   }
-      const weekday = formatWeekday(date).replace(".", "");
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
 
   createPaginationControls();
 }
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "day-btn";
 
 function createTimeButton(time, available, reason) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "time-btn";
   button.setAttribute("aria-pressed", "false");
-      button.innerHTML = `
-        <span>${weekday}</span>
-        <strong>${day}/${month}</strong>
-      `;
 
   const timeText = document.createElement("strong");
   timeText.textContent = time || "--:--";
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".day-btn").forEach((btn) => {
-          btn.classList.remove("active");
-        });
-
-        button.classList.add("active");
 
   const statusText = document.createElement("span");
   statusText.textContent = available ? "Disponível" : reason;
-        dateInput.value = dateString;
-        timeInput.value = "";
 
   button.appendChild(timeText);
   button.appendChild(statusText);
-        loadTimes(dateString);
-      });
 
   if (!available) {
     button.disabled = true;
     button.classList.add("disabled");
     return button;
   }
-      daysContainer.appendChild(button);
 
   button.addEventListener("click", () => {
     document.querySelectorAll(".time-btn").forEach((btn) => {
       btn.classList.remove("active");
       btn.setAttribute("aria-pressed", "false");
     });
-      added++;
-    }
 
     button.classList.add("active");
     button.setAttribute("aria-pressed", "true");
     timeInput.value = time;
   });
-    index++;
-  }
 
   return button;
-  createPaginationControls();
 }
 
 async function loadTimes(date) {
@@ -209,43 +220,32 @@ async function loadTimes(date) {
   try {
     const params = new URLSearchParams({ date });
     const response = await fetch(`${API_URL}/times?${params.toString()}`);
-  timesContainer.innerHTML = `
-    <p class="empty-text">Carregando horários...</p>
-  `;
 
     if (!response.ok) {
       throw new Error("Erro ao buscar horários.");
     }
-  message.textContent = "";
 
-  try {
-    const response = await fetch(`${API_URL}/times?date=${date}`);
     const data = await response.json();
 
     timesContainer.innerHTML = "";
 
     const rawTimes = data.times || data.available || [];
     const times = Array.isArray(rawTimes) ? rawTimes : [];
-    const times = data.times || data.available || [];
 
     if (!times.length) {
       setEmptyTimes("Nenhum horário disponível para este dia.");
-      timesContainer.innerHTML = `
-        <p class="empty-text">Nenhum horário disponível para este dia.</p>
-      `;
       return;
     }
 
+    times.forEach((item) => {
+      let time = item;
       let available = true;
       let reason = "Horário indisponível";
 
       if (typeof item === "object" && item !== null) {
-      if (typeof item === "object") {
         time = item.time;
         available = item.available !== false;
         reason = item.reason || reason;
-        available = item.available;
-        reason = item.reason || "Horário indisponível";
       }
 
       timesContainer.appendChild(createTimeButton(time, Boolean(time) && available, reason));
@@ -256,52 +256,20 @@ async function loadTimes(date) {
     timesContainer.removeAttribute("aria-busy");
   }
 }
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "time-btn";
 
 function onlyDigits(value) {
   return value.replace(/\D/g, "");
 }
-      if (available) {
-        button.innerHTML = `
-          <strong>${time}</strong>
-          <span>Disponível</span>
-        `;
-      } else {
-        button.innerHTML = `
-          <strong>${time}</strong>
-          <span>${reason}</span>
-        `;
 
 function formatPhone(value) {
   const digits = onlyDigits(value).slice(0, 11);
-        button.disabled = true;
-        button.classList.add("disabled");
-      }
 
   if (digits.length <= 2) {
     return digits;
   }
-      button.addEventListener("click", () => {
-        if (!available) return;
-
-        document.querySelectorAll(".time-btn").forEach((btn) => {
-          btn.classList.remove("active");
-        });
-
-        button.classList.add("active");
-        timeInput.value = time;
-      });
 
   if (digits.length <= 7) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-      timesContainer.appendChild(button);
-    });
-  } catch (error) {
-    timesContainer.innerHTML = `
-      <p class="empty-text">Erro ao carregar horários.</p>
-    `;
   }
 
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
@@ -318,9 +286,6 @@ form.addEventListener("submit", async (event) => {
     name: nameInput.value.trim(),
     phone: phoneInput.value.trim(),
     service: serviceInput.value,
-    name: document.getElementById("name").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    service: document.getElementById("service").value,
     date: dateInput.value,
     time: timeInput.value
   };
@@ -330,6 +295,7 @@ form.addEventListener("submit", async (event) => {
   if (
     !appointment.name ||
     !appointment.phone ||
+    !appointment.service ||
     !appointment.date ||
     !appointment.time
   ) {
@@ -340,33 +306,34 @@ form.addEventListener("submit", async (event) => {
   if (phoneDigits.length < 10) {
     setMessage("Informe um WhatsApp válido com DDD.", "error");
     phoneInput.focus();
-    message.textContent = "Preencha todos os campos e escolha dia e horário.";
     return;
   }
 
   setMessage("Confirmando agendamento...");
   submitButton.disabled = true;
-  message.textContent = "Confirmando agendamento...";
 
   try {
     const response = await fetch(`${API_URL}/appointments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(appointment)
     });
 
     const data = await response.json().catch(() => ({}));
-    const data = await response.json();
 
     if (!response.ok) {
       setMessage(data.error || "Erro ao agendar. Tente novamente.", "error");
-      message.textContent = data.error || "Erro ao agendar.";
       return;
     }
 
     setMessage("Agendamento realizado com sucesso!", "success");
-    message.textContent = "Agendamento realizado com sucesso!";
 
     form.reset();
 
+    dateInput.value = "";
+    timeInput.value = "";
 
     document.querySelectorAll(".day-btn").forEach((btn) => {
       btn.classList.remove("active");
@@ -374,13 +341,11 @@ form.addEventListener("submit", async (event) => {
     });
 
     setEmptyTimes("Escolha um dia primeiro.");
-    timesContainer.innerHTML = `
-      <p class="empty-text">Escolha um dia primeiro.</p>
-    `;
   } catch (error) {
     setMessage("Erro ao conectar ao servidor.", "error");
   } finally {
     submitButton.disabled = false;
-    message.textContent = "Erro ao conectar ao servidor.";
   }
 });
+
+generateDays();
