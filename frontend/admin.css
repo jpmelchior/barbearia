@@ -23,30 +23,35 @@ body {
 }
 
 .login-box {
-  max-width: 380px;
-  margin: 90px auto;
+  max-width: 390px;
+  margin: 70px auto;
   background: #171717;
   border: 1px solid rgba(212, 175, 55, 0.28);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 .login-box h1 {
   color: #d4af37;
-  font-size: 26px;
+  font-size: 28px;
   margin-bottom: 6px;
+  text-align: center;
+  letter-spacing: 1px;
 }
 
 .login-box p {
   color: #aaa;
   font-size: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 .login-box form {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 14px;
 }
 
 input {
@@ -63,7 +68,9 @@ input:focus {
   border-color: #d4af37;
 }
 
-button {
+button,
+.site-button,
+.site-link {
   border: none;
   border-radius: 12px;
   padding: 10px 14px;
@@ -71,6 +78,11 @@ button {
   color: #000;
   font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
 button:disabled {
@@ -78,9 +90,27 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.site-button {
+  width: 100%;
+  margin: 10px 0 4px;
+  padding: 12px;
+}
+
+.site-button:hover,
+.site-link:hover,
+button:hover {
+  filter: brightness(1.08);
+}
+
+.site-link {
+  background: #d4af37;
+  color: #000;
+}
+
 .message {
   margin-top: 12px;
   font-size: 14px;
+  text-align: center;
 }
 
 .message.error,
@@ -102,6 +132,7 @@ button:disabled {
 .panel-header h1 {
   color: #d4af37;
   font-size: 23px;
+  letter-spacing: 1px;
 }
 
 .panel-header p {
@@ -329,6 +360,10 @@ button:disabled {
     padding: 10px;
   }
 
+  .login-box {
+    margin: 40px auto;
+  }
+
   .panel-header {
     flex-direction: column;
     align-items: flex-start;
@@ -337,10 +372,13 @@ button:disabled {
 
   .header-actions {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
-  .header-actions button {
-    flex: 1;
+  .header-actions button,
+  .header-actions a {
+    width: 100%;
   }
 
   .tabs {
