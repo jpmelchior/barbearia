@@ -2,131 +2,160 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
 body {
-  background: #0f0f0f;
-  color: #ffffff;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 30px;
+  background:
+    radial-gradient(circle at top, rgba(245, 197, 66, 0.18), transparent 35%),
+    linear-gradient(135deg, #050505, #111111 45%, #050505);
+  color: #fff;
+  padding: 24px;
 }
 
 .container {
   width: 100%;
-  max-width: 700px;
+  max-width: 1150px;
+  margin: 0 auto;
 }
 
 .card {
-  background: #1a1a1a;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 22px;
-  padding: 30px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.4);
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid rgba(245, 197, 66, 0.22);
+  border-radius: 24px;
+  padding: 34px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
 }
 
 h1 {
-  font-size: 2rem;
-  margin-bottom: 10px;
   color: #f5c542;
+  font-size: 2.4rem;
+  margin-bottom: 10px;
 }
 
 h2 {
-  margin-top: 35px;
-  margin-bottom: 15px;
   color: #f5c542;
-  font-size: 1.3rem;
+  margin: 32px 0 16px;
+  font-size: 1.45rem;
 }
 
 p {
-  color: #cccccc;
-  margin-bottom: 10px;
+  color: #d6d6d6;
+  line-height: 1.6;
 }
 
 form {
-  margin-top: 20px;
+  margin-top: 25px;
 }
 
 label {
   display: block;
   margin-top: 18px;
   margin-bottom: 8px;
-  color: #f0f0f0;
-  font-weight: bold;
+  color: #f5c542;
+  font-weight: 700;
 }
 
 input,
 select,
-button,
 textarea {
   width: 100%;
-  border: none;
-  outline: none;
-  border-radius: 12px;
-  padding: 14px;
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 197, 66, 0.22);
+  background: #111;
+  color: #fff;
   font-size: 1rem;
+  outline: none;
 }
 
-input,
-select,
-textarea {
-  background: #2a2a2a;
-  color: #ffffff;
-  border: 1px solid rgba(255,255,255,0.08);
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #f5c542;
+  box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.12);
 }
 
-input::placeholder,
-textarea::placeholder {
-  color: #999999;
+input::placeholder {
+  color: #888;
 }
 
 button {
+  width: 100%;
   margin-top: 20px;
-  background: #f5c542;
-  color: #000000;
-  font-weight: bold;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f5c542, #ffd86b);
+  color: #000;
+  font-weight: 800;
+  font-size: 1rem;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: 0.2s;
 }
 
 button:hover {
-  transform: scale(1.02);
-  background: #ffd95e;
+  transform: translateY(-2px);
+  filter: brightness(1.08);
 }
 
 #message,
 #loginMessage {
+  margin-top: 18px;
+  font-weight: 700;
+}
+
+.day-buttons,
+.time-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
   margin-top: 15px;
-  font-weight: bold;
+}
+
+.day-button,
+.time-button {
+  background: #171717;
+  border: 1px solid rgba(245, 197, 66, 0.25);
+  color: #fff;
+}
+
+.day-button.active,
+.time-button.active {
+  background: #f5c542;
+  color: #000;
+}
+
+.day-button:disabled,
+.time-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #333;
+  color: #999;
 }
 
 .admin-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(245, 197, 66, 0.18);
+  border-radius: 18px;
   padding: 18px;
-  margin-top: 15px;
+  margin: 14px 0;
 }
 
 .admin-item strong {
   display: block;
   color: #f5c542;
   margin-bottom: 10px;
-  font-size: 1.05rem;
 }
 
 .admin-item p {
   margin: 6px 0;
-  color: #dddddd;
 }
 
 .admin-item button {
   background: #b91c1c;
-  color: #ffffff;
-  margin-top: 12px;
+  color: #fff;
 }
 
 .admin-item button:hover {
@@ -136,13 +165,6 @@ button:hover {
 #appointmentsList,
 #blocksList {
   margin-top: 15px;
-}
-
-hr {
-  border: none;
-  height: 1px;
-  background: rgba(255,255,255,0.08);
-  margin: 25px 0;
 }
 
 .success {
@@ -159,27 +181,32 @@ hr {
 
 @media (max-width: 768px) {
   body {
-    padding: 15px;
-    align-items: flex-start;
+    padding: 14px;
   }
 
   .card {
-    padding: 20px;
+    padding: 22px;
+    border-radius: 18px;
   }
 
   h1 {
-    font-size: 1.7rem;
+    font-size: 1.8rem;
   }
 
   h2 {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
+  }
+
+  .day-buttons,
+  .time-buttons {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   input,
   select,
   button,
   textarea {
-    font-size: 0.95rem;
     padding: 13px;
+    font-size: 0.95rem;
   }
 }
