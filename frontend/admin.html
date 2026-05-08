@@ -1,10 +1,15 @@
+<!-- frontend/admin.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel Admin - Barbearia</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#050505" />
+
+  <title>Painel Admin | Barbearia Prime</title>
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -14,42 +19,58 @@
     <h1>Controle da Barbearia</h1>
   </div>
 
-  <button id="logoutBtn" class="logout-btn">
+  <button id="logoutBtn" class="logout-btn" type="button">
     Sair
   </button>
 </header>
 
 <main class="admin-container">
 
-  <section class="admin-login-card" id="loginSection">
+  <section class="admin-login-card" id="loginSection" aria-labelledby="login-title">
 
     <span class="tag">Login admin</span>
 
-    <h2>Acesso restrito</h2>
+    <h2 id="login-title">Acesso restrito</h2>
 
-    <div class="admin-login-grid">
+    <form id="loginForm" class="admin-login-grid" autocomplete="on">
 
       <div class="field">
-        <label>Usuário</label>
-        <input type="text" id="adminUser" placeholder="Digite o usuário">
+        <label for="adminUser">Usuário</label>
+        <input
+          type="text"
+          id="adminUser"
+          name="username"
+          placeholder="Digite o usuário"
+          autocomplete="username"
+          required
+        />
       </div>
 
       <div class="field">
-        <label>Senha</label>
-        <input type="password" id="adminPassword" placeholder="Digite a senha">
+        <label for="adminPassword">Senha</label>
+        <input
+          type="password"
+          id="adminPassword"
+          name="password"
+          placeholder="Digite a senha"
+          autocomplete="current-password"
+          required
+        />
       </div>
 
-    </div>
+      <button id="loginBtn" class="submit-btn" type="submit">
+        Entrar no painel
+      </button>
 
-    <button id="loginBtn" class="submit-btn">
-      Entrar no painel
-    </button>
+      <p id="loginMessage" role="status" aria-live="polite"></p>
 
-    <p id="loginMessage"></p>
+    </form>
 
   </section>
 
-  <section class="dashboard" id="dashboardSection">
+  <section class="dashboard" id="dashboardSection" aria-labelledby="dashboard-title">
+
+    <h2 id="dashboard-title" class="sr-only">Resumo administrativo</h2>
 
     <div class="dashboard-grid">
 
@@ -65,30 +86,37 @@
 
     </div>
 
-    <section class="admin-block-section">
+    <section class="admin-block-section" aria-labelledby="blocks-title">
 
       <div class="admin-block-header">
         <div>
           <span class="tag">Bloquear horários</span>
-          <h2>Gerenciar bloqueios</h2>
+          <h2 id="blocks-title">Gerenciar bloqueios</h2>
         </div>
       </div>
 
       <form id="blockForm" class="admin-form">
 
         <div class="field">
-          <label>Data</label>
-          <input type="date" id="blockDate">
+          <label for="blockDate">Data</label>
+          <input type="date" id="blockDate" name="date" required />
         </div>
 
         <div class="field">
-          <label>Horário (opcional)</label>
-          <input type="time" id="blockTime">
+          <label for="blockTime">Horário (opcional)</label>
+          <input type="time" id="blockTime" name="time" />
         </div>
 
         <div class="field full">
-          <label>Motivo</label>
-          <input type="text" id="blockReason" placeholder="Ex: Viagem, feriado, manutenção">
+          <label for="blockReason">Motivo</label>
+          <input
+            type="text"
+            id="blockReason"
+            name="reason"
+            placeholder="Ex: Viagem, feriado, manutenção"
+            maxlength="120"
+            required
+          />
         </div>
 
         <button type="submit" class="submit-btn">
@@ -110,7 +138,7 @@
           </div>
         </div>
 
-        <div id="appointmentsList" class="admin-list"></div>
+        <div id="appointmentsList" class="admin-list" aria-live="polite"></div>
 
       </div>
 
@@ -123,7 +151,7 @@
           </div>
         </div>
 
-        <div id="blocksList" class="admin-list"></div>
+        <div id="blocksList" class="admin-list" aria-live="polite"></div>
 
       </div>
 
