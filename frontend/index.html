@@ -1,143 +1,193 @@
+<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Barbearia Prime</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <header class="header">
-    <div class="header-logo">Barbearia Prime</div>
-    <nav class="nav">
-      <a href="#home">Início</a>
-      <a href="#sobre">Sobre</a>
-      <a href="#servicos">Serviços</a>
-      <a href="#agendamento">Agendar</a>
-    </nav>
-  </header>
 
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-overlay"></div>
+<header class="header">
+  <div class="logo">BARBEARIA PRIME</div>
 
-      <div class="hero-content">
-        <span class="tag">Barbearia Premium</span>
-        <h1>A barbearia mais braba da cidade</h1>
+  <nav class="nav">
+    <a href="#inicio">Início</a>
+    <a href="#sobre">Sobre</a>
+    <a href="#servicos">Serviços</a>
+    <a href="#agendamento">Agendar</a>
+  </nav>
+</header>
+
+<section class="hero" id="inicio">
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <span class="tag">Barbearia Premium</span>
+
+    <h1>
+      ESTILO.<br>
+      PRESENÇA.<br>
+      RESPEITO.
+    </h1>
+
+    <p>
+      Cortes modernos, degradê profissional, barba alinhada
+      e atendimento premium para quem exige qualidade.
+    </p>
+
+    <a href="#agendamento" class="hero-button">
+      AGENDAR HORÁRIO
+    </a>
+  </div>
+</section>
+
+<section class="section" id="sobre">
+  <div class="section-text">
+    <span class="tag">Sobre nós</span>
+
+    <h2>
+      Experiência profissional em cada detalhe
+    </h2>
+
+    <p>
+      Nossa barbearia foi criada para oferecer um ambiente premium,
+      moderno e confortável, focado em cortes de alta qualidade,
+      barba, acabamento e atendimento profissional.
+    </p>
+  </div>
+
+  <div class="info-card">
+    <h3>Funcionamento</h3>
+
+    <p>Segunda a Sexta</p>
+
+    <strong>08:00 às 20:00</strong>
+  </div>
+</section>
+
+<section class="services" id="servicos">
+  <span class="tag">Serviços</span>
+
+  <h2>Nossos serviços</h2>
+
+  <div class="services-grid">
+
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80">
+
+      <div class="service-content">
+        <h3>Corte Masculino</h3>
+
         <p>
-          Cortes modernos, barba alinhada, degradê profissional e atendimento de alto nível.
-        </p>
-        <a href="#agendamento" class="btn-primary">Agendar horário</a>
-      </div>
-    </section>
-
-    <section class="about" id="sobre">
-      <div class="about-text">
-        <span class="tag">Sobre nós</span>
-        <h2>Estilo, precisão e respeito pelo cliente</h2>
-        <p>
-          A Barbearia Prime foi criada para oferecer uma experiência premium,
-          com ambiente elegante, atendimento profissional e serviços pensados
-          para homens que valorizam presença, estilo e confiança.
-        </p>
-      </div>
-
-      <div class="about-card">
-        <h3>Funcionamento</h3>
-        <p>Segunda a Sexta</p>
-        <strong>08:00 às 20:00</strong>
-      </div>
-    </section>
-
-    <section class="services" id="servicos">
-      <span class="tag">Serviços</span>
-      <h2>Cortes e estilos</h2>
-
-      <div class="services-grid">
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=900&q=80" alt="Corte masculino">
-          <div>
-            <h3>Corte Masculino</h3>
-            <p>Corte moderno, alinhado e finalizado com acabamento profissional.</p>
-          </div>
-        </div>
-
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1622286346003-c7770d7417e1?auto=format&fit=crop&w=900&q=80" alt="Barba">
-          <div>
-            <h3>Barba</h3>
-            <p>Modelagem, alinhamento e acabamento para uma barba imponente.</p>
-          </div>
-        </div>
-
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=900&q=80" alt="Degradê">
-          <div>
-            <h3>Degradê</h3>
-            <p>Degradê limpo, sombreado e com finalização de respeito.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="booking" id="agendamento">
-      <div class="booking-info">
-        <span class="tag">Agendamento online</span>
-        <h2>Reserve seu horário</h2>
-        <p>
-          Escolha o serviço, selecione o dia e depois o horário disponível.
-          Horários ocupados ou bloqueados pelo barbeiro não aparecem para o cliente.
+          Corte moderno com acabamento profissional.
         </p>
       </div>
+    </div>
 
-      <form id="appointmentForm" class="booking-form">
-        <div class="field">
-          <label for="name">Nome</label>
-          <input type="text" id="name" placeholder="Digite seu nome" required />
-        </div>
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1622286346003-c7770d7417e1?auto=format&fit=crop&w=1200&q=80">
 
-        <div class="field">
-          <label for="phone">WhatsApp</label>
-          <input type="text" id="phone" placeholder="(43) 99999-9999" required />
-        </div>
+      <div class="service-content">
+        <h3>Barba</h3>
 
-        <div class="field full">
-          <label for="service">Serviço</label>
-          <select id="service" required>
-            <option value="">Selecione um serviço</option>
-            <option value="Corte Masculino">Corte Masculino</option>
-            <option value="Barba">Barba</option>
-            <option value="Corte + Barba">Corte + Barba</option>
-            <option value="Degradê">Degradê</option>
-            <option value="Sobrancelha">Sobrancelha</option>
-          </select>
-        </div>
+        <p>
+          Alinhamento, modelagem e acabamento.
+        </p>
+      </div>
+    </div>
 
-        <div class="field full">
-          <label>Escolha o dia</label>
-          <div id="daysContainer" class="buttons-grid"></div>
-        </div>
+    <div class="service-card">
+      <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80">
 
-        <div class="field full">
-          <label>Escolha o horário</label>
-          <div id="timesContainer" class="buttons-grid"></div>
-        </div>
+      <div class="service-content">
+        <h3>Degradê</h3>
 
-        <input type="hidden" id="date" />
-        <input type="hidden" id="time" />
+        <p>
+          Degradê limpo, sombreado e moderno.
+        </p>
+      </div>
+    </div>
 
-        <button type="submit" class="btn-submit">Confirmar agendamento</button>
+  </div>
+</section>
 
-        <p id="message"></p>
-      </form>
-    </section>
-  </main>
+<section class="booking" id="agendamento">
 
-  <footer class="footer">
-    <p>© 2026 Barbearia Prime — Todos os direitos reservados.</p>
-    <a href="admin.html">Painel admin</a>
-  </footer>
+  <div class="booking-left">
+    <span class="tag">Agendamento Online</span>
 
-  <script src="script.js"></script>
+    <h2>
+      Escolha seu horário
+    </h2>
+
+    <p>
+      Horários ocupados ou bloqueados ficam indisponíveis automaticamente.
+    </p>
+  </div>
+
+  <form id="appointmentForm" class="booking-form">
+
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="name" placeholder="Digite seu nome">
+    </div>
+
+    <div class="field">
+      <label>WhatsApp</label>
+      <input type="text" id="phone" placeholder="(43) 99999-9999">
+    </div>
+
+    <div class="field full">
+      <label>Serviço</label>
+
+      <select id="service">
+        <option value="">Escolha um serviço</option>
+        <option value="Corte Masculino">Corte Masculino</option>
+        <option value="Barba">Barba</option>
+        <option value="Corte + Barba">Corte + Barba</option>
+        <option value="Degradê">Degradê</option>
+      </select>
+    </div>
+
+    <div class="field full">
+      <label>Escolha o dia</label>
+
+      <div id="daysContainer" class="days-grid"></div>
+    </div>
+
+    <div class="field full">
+      <label>Escolha o horário</label>
+
+      <div id="timesContainer" class="times-grid">
+        <p class="empty-text">
+          Escolha um dia primeiro.
+        </p>
+      </div>
+    </div>
+
+    <input type="hidden" id="date">
+    <input type="hidden" id="time">
+
+    <button type="submit" class="submit-btn">
+      CONFIRMAR AGENDAMENTO
+    </button>
+
+    <p id="message"></p>
+
+  </form>
+
+</section>
+
+<footer class="footer">
+  <p>© 2026 Barbearia Prime</p>
+
+  <a href="admin.html">
+    Painel admin
+  </a>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
