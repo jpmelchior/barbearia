@@ -1,109 +1,315 @@
 
-  gap:16px;
+  --border:rgba(184,148,75,.32);
+  --danger:#b91c1c;
+  --success:#22c55e;
+  --header-height:82px;
 }
 
-.admin-day-controls{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  gap:12px;
-  align-items:stretch;
-  margin-top:18px;
+html{
+  scroll-behavior:smooth;
+  scroll-padding-top:calc(var(--header-height) + 18px);
 }
 
-.admin-day-current{
-  min-width:118px;
-  min-height:54px;
-  padding:10px 16px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  background:#090909;
-  border:1px solid var(--border);
-}
-
-.admin-day-current span{
-  color:var(--muted);
-  font-size:.72rem;
-  font-weight:900;
-  text-transform:uppercase;
-  letter-spacing:1px;
-}
-
-.admin-day-current strong{
-  color:var(--gold2);
-  font-size:1.15rem;
-}
-
-.admin-card{
-  background:#181818;
-  border:1px solid rgba(255,255,255,.06);
-  gap:8px;
-}
-
-.appointment-card{
-  padding:14px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-}
-
-.appointment-main{
-  min-width:0;
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.appointment-time{
-  min-width:62px;
-  color:var(--gold2);
-  font-size:1.3rem;
-  line-height:1;
-}
-
-.appointment-summary{
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-}
-
-.appointment-client{
-  overflow:hidden;
+body{
+  min-width:320px;
+  overflow-x:hidden;
+  background:var(--black);
   color:var(--white);
-  font-size:.95rem;
-  font-weight:900;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  font-family:Arial, Helvetica, sans-serif;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
 }
 
-.appointment-service,
-.appointment-phone{
+img{
+  max-width:100%;
+}
+
+button,
+input,
+select{
+  font:inherit;
+}
+
+.skip-link,
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
   overflow:hidden;
-  color:var(--muted);
-  font-size:.8rem;
-  line-height:1.35;
-  text-overflow:ellipsis;
+  clip:rect(0,0,0,0);
   white-space:nowrap;
 }
 
-.appointment-phone{
-  color:var(--gold2);
+.skip-link:focus{
+  width:auto;
+  height:auto;
+  clip:auto;
+  left:18px;
+  top:18px;
+  z-index:999;
+  padding:12px 16px;
+  background:var(--gold2);
+  color:#050505;
+  font-weight:900;
   text-decoration:none;
 }
 
-.danger-btn{
-  margin-top:18px;
-  background:#a61d1d;
-  color:white;
+/* HEADER */
+
+.header{
+  width:100%;
+  min-height:var(--header-height);
+  height:82px;
+  padding:0 7%;
+  display:flex;
+  justify-content:space-between;
+  z-index:100;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
 }
 
-.compact-danger{
-  flex:0 0 auto;
-  min-height:38px;
-  margin-top:0;
+  font-size:1rem;
+  font-weight:900;
+  letter-spacing:3px;
+  text-decoration:none;
+  white-space:nowrap;
+}
+
+.nav{
+  transition:.2s;
+}
+
+.nav a:hover,
+.nav a:focus-visible{
+.nav a:hover{
+  color:var(--gold2);
+}
+
+
+.hero{
+  min-height:100vh;
+  min-height:100svh;
+  display:flex;
+  align-items:center;
+  padding:calc(var(--header-height) + 34px) 7% 80px;
+  padding:0 7%;
+  position:relative;
+  overflow:hidden;
+
+.hero-button,
+.submit-btn,
+button{
+  min-height:48px;
+
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.hero-button:hover,
+.hero-button:focus-visible,
+.submit-btn:hover,
+.submit-btn:focus-visible,
+button:hover,
+button:focus-visible{
+button:hover{
+  background:var(--gold2);
+}
+
+button:disabled,
+button.disabled{
+  cursor:not-allowed;
+}
+
+button:disabled:hover,
+button.disabled:hover{
+  background:#111;
+}
+
+/* SECTIONS */
+
+.service-card img{
+  width:100%;
+  aspect-ratio:4/3;
+  height:auto;
+  height:320px;
+  object-fit:cover;
+  display:block;
+}
+
+.service-content{
+  padding:26px;
+}
+
+@media (hover:hover){
+  .service-card{
+    transition:transform .22s, border-color .22s;
+  }
+
+  .service-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(226,193,120,.58);
+  }
+}
+
+/* BOOKING */
+}
+
+.field{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.field.full,
+.submit-btn,
+#message,
+#loginMessage{
+#message{
+  grid-column:1/-1;
+}
+
+input,
+select{
+  width:100%;
+  min-height:52px;
+
+  padding:16px;
+
+  background:#050505;
+
+  border:1px solid var(--border);
+  border-radius:0;
+
+  color:white;
+
+  outline:none;
+  appearance:none;
+  -webkit-appearance:none;
+
+  font-size:16px;
+
+  transition:.2s;
+}
+
+select{
+  background-image:linear-gradient(45deg, transparent 50%, var(--gold2) 50%), linear-gradient(135deg, var(--gold2) 50%, transparent 50%);
+  background-position:calc(100% - 20px) 23px, calc(100% - 14px) 23px;
+  background-size:6px 6px, 6px 6px;
+  background-repeat:no-repeat;
+  padding-right:44px;
+}
+
+input:focus,
+select:focus{
+  border-color:var(--gold2);
+  color:#ff6666;
+}
+
+.time-btn.disabled:hover{
+  background:#090909;
+}
+
+/* PAGINATION */
+
+.pagination-controls{
+  color:var(--gold2);
+}
+
+.pagination-btn:hover,
+.pagination-btn:focus-visible{
+.pagination-btn:hover{
+  background:var(--gold);
+  color:#050505;
+}
+.pagination-btn:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+.pagination-btn.disabled:hover,
+.pagination-btn:disabled:hover{
+  background:#111;
+  color:var(--gold2);
+}
+
+/* MESSAGE */
+
+#message,
+#loginMessage{
+  min-height:1.8em;
+#message{
+  color:var(--gold2);
+  font-weight:800;
+}
+
+#message.success,
+#loginMessage.success{
+  color:var(--success);
+}
+
+#message.error,
+#loginMessage.error{
+  color:#ff7777;
+}
+
+.empty-text{
+  grid-column:1/-1;
+  color:var(--muted);
+}
+
+.footer a{
+  color:var(--gold2);
+  text-decoration:none;
+  font-weight:800;
+}
+
+.footer a:hover,
+.footer a:focus-visible{
+  color:var(--white);
+}
+
+/* ADMIN */
+
+.admin-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:24px;
+  border-bottom:1px solid var(--border);
+  background:#080808;
+}
+
+.admin-header h1{
+  margin:10px 0 0;
+  font-size:clamp(1.9rem, 4vw, 3.4rem);
+  line-height:1.05;
+}
+
+.admin-tag{
+  color:var(--gold2);
+  font-size:.78rem;
+  padding:38px;
+}
+
+.admin-login-card h2,
+.admin-block-section h2,
+.admin-panel-card h2{
+  font-size:clamp(1.8rem, 3vw, 2.8rem);
+}
+
+.admin-login-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+
+.admin-panel-card{
+  min-width:0;
+  background:#111;
+  border:1px solid var(--border);
+  padding:30px;
   padding:10px 12px;
   font-size:.72rem;
   letter-spacing:.7px;
@@ -112,30 +318,101 @@
 .danger-btn:hover,
 .danger-btn:focus-visible{
   background:var(--danger);
+}
+
+.logout-btn{
+  background:#111;
+  border:1px solid var(--border);
+  color:var(--gold2);
+  white-space:nowrap;
+}
+
+/* RESPONSIVE */
+}
+
+@media(max-width:760px){
+
+  :root{
+    --header-height:118px;
+  }
+
+  .header{
+    padding:16px 20px;
+    height:auto;
+    padding:18px;
+    flex-direction:column;
+    gap:14px;
+    gap:16px;
+  }
+
+  .nav{
+    width:100%;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px 18px;
+  }
+
+  .nav a{
+    font-size:.74rem;
+  }
+
+  .hero{
+    align-items:flex-end;
+    padding:calc(var(--header-height) + 34px) 20px 64px;
+    background-position:center top;
+  }
+
+  .section,
+  .services,
+  .booking,
+  .admin-container{
+    padding:70px 20px;
+  }
+
+  .booking-form,
+  .admin-login-card,
+  .admin-block-section,
+  .admin-panel-card{
+    padding:26px 20px;
+  }
+
+  h1{
+    font-size:clamp(3rem, 15vw, 3.6rem);
+    font-size:3.6rem;
+  }
+
+  h2{
+    font-size:clamp(2rem, 10vw, 2.5rem);
+  }
+
+  .tag{
+    margin-bottom:18px;
+    letter-spacing:3px;
+  }
+
+  .hero p{
+    font-size:1rem;
+    font-size:2.5rem;
+  }
+
+  .hero-button,
+  .submit-btn,
+  button{
+    width:100%;
+    padding:15px 18px;
+  }
+
+  .days-grid,
+  .times-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .pagination-controls{
     grid-template-columns:1fr;
+    grid-template-columns:repeat(2,1fr);
   }
 
   .admin-day-controls{
-    grid-template-columns:1fr 1fr;
-  }
-
-  .admin-day-current{
-    grid-column:1/-1;
-    order:-1;
-  }
-
-  .appointment-card{
-    padding:12px;
-    align-items:flex-start;
-  }
-
-  .appointment-main{
-    gap:10px;
-  }
-
-  .appointment-time{
-    min-width:54px;
-    font-size:1.12rem;
   }
 
   .appointment-client{
@@ -143,16 +420,6 @@
     font-size:.9rem;
   }
 
-  .appointment-service,
-  .appointment-phone{
-    font-size:.76rem;
-  }
-
-  .appointment-card .danger-btn{
-    width:auto;
-  }
-
-  .compact-danger{
     min-height:34px;
     padding:9px 10px;
     font-size:.66rem;
@@ -161,3 +428,51 @@
   .admin-header{
     align-items:flex-start;
     flex-direction:column;
+    padding:24px 20px;
+  }
+
+  .admin-header h1{
+    font-size:2.2rem;
+  }
+
+  .footer{
+    flex-direction:column;
+    gap:16px;
+    text-align:center;
+  }
+
+}
+
+@media(max-width:380px){
+@media(max-width:520px){
+
+  .days-grid,
+  .times-grid{
+    grid-template-columns:1fr;
+  }
+
+  .logo{
+    font-size:.9rem;
+    letter-spacing:2px;
+  }
+
+  h1{
+    font-size:2.75rem;
+    font-size:3rem;
+  }
+
+  h2{
+    font-size:1.9rem;
+    font-size:2rem;
+  }
+
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    scroll-behavior:auto !important;
+    transition:none !important;
+  }
+}
