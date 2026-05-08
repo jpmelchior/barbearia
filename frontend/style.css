@@ -2,30 +2,29 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
 :root {
-  --bg: #070707;
-  --card: rgba(18, 18, 18, 0.92);
-  --card2: rgba(255, 255, 255, 0.055);
-  --gold: #d4af37;
-  --gold2: #f5d76e;
-  --text: #ffffff;
-  --muted: #b9b9b9;
-  --danger: #dc2626;
-  --success: #22c55e;
-  --border: rgba(212, 175, 55, 0.22);
+  --black: #050505;
+  --dark: #0d0d0d;
+  --dark-2: #151515;
+  --gold: #b9944a;
+  --gold-light: #d6b56d;
+  --white: #f7f2e8;
+  --muted: #b7b0a3;
+  --border: rgba(185, 148, 74, 0.35);
+  --danger: #a51d1d;
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(212, 175, 55, 0.28), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(212, 175, 55, 0.12), transparent 30%),
-    linear-gradient(135deg, #030303, #101010 45%, #050505);
-  color: var(--text);
-  padding: 24px;
+    linear-gradient(rgba(0,0,0,.78), rgba(0,0,0,.86)),
+    radial-gradient(circle at top left, rgba(185,148,74,.22), transparent 34%),
+    linear-gradient(135deg, #050505, #121212);
+  color: var(--white);
+  font-family: Georgia, "Times New Roman", serif;
+  padding: 0;
 }
 
 body::before {
@@ -33,173 +32,193 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 42px 42px;
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 46px 46px;
   pointer-events: none;
+  opacity: .45;
 }
 
 .container {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1180px;
   margin: 0 auto;
+  padding: 38px 18px;
   position: relative;
   z-index: 1;
 }
 
 .card {
-  background: var(--card);
+  min-height: calc(100vh - 76px);
+  background:
+    linear-gradient(90deg, rgba(5,5,5,.97) 0%, rgba(12,12,12,.94) 54%, rgba(20,20,20,.88) 100%);
   border: 1px solid var(--border);
-  border-radius: 30px;
-  padding: 38px;
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.72),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px);
+  padding: 54px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 35px 90px rgba(0,0,0,.65);
 }
 
 .card::before {
-  content: "BARBEARIA PREMIUM";
-  display: inline-block;
-  color: #000;
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  margin-bottom: 18px;
+  content: "BARBEARIA";
+  display: block;
+  color: var(--gold-light);
+  font-family: Arial, sans-serif;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  top: -120px;
+  width: 420px;
+  height: 420px;
+  border: 1px solid rgba(185,148,74,.2);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(185,148,74,.15), transparent 65%);
+  pointer-events: none;
 }
 
 h1 {
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 1.02;
-  color: var(--text);
-  margin-bottom: 12px;
-  letter-spacing: -1.5px;
+  max-width: 760px;
+  color: var(--white);
+  font-size: clamp(2.7rem, 7vw, 5.8rem);
+  line-height: .9;
+  text-transform: uppercase;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
 }
 
 h1::after {
   content: "";
   display: block;
-  width: 90px;
-  height: 4px;
-  background: linear-gradient(90deg, var(--gold), transparent);
-  border-radius: 999px;
-  margin-top: 18px;
+  width: 120px;
+  height: 2px;
+  background: var(--gold);
+  margin-top: 28px;
 }
 
 h2 {
-  color: var(--gold2);
-  margin: 34px 0 16px;
-  font-size: 1.45rem;
+  color: var(--gold-light);
+  font-family: Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 1rem;
+  margin: 36px 0 18px;
 }
 
 p {
   color: var(--muted);
-  line-height: 1.7;
-  font-size: 1rem;
+  font-family: Arial, sans-serif;
+  line-height: 1.75;
+  max-width: 720px;
 }
 
 form {
-  margin-top: 28px;
+  margin-top: 34px;
+  max-width: 850px;
   display: grid;
-  gap: 2px;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
 }
 
 label {
-  display: block;
-  margin-top: 18px;
-  margin-bottom: 8px;
-  color: var(--gold2);
+  color: var(--gold-light);
+  font-family: Arial, sans-serif;
+  font-size: .78rem;
   font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  margin-bottom: -8px;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  padding: 16px 17px;
-  border-radius: 16px;
-  border: 1px solid rgba(212, 175, 55, 0.22);
-  background: rgba(0, 0, 0, 0.42);
-  color: #fff;
-  font-size: 1rem;
+  background: rgba(255,255,255,.045);
+  color: var(--white);
+  border: 1px solid rgba(185,148,74,.28);
+  padding: 16px 15px;
+  font-family: Arial, sans-serif;
+  font-size: .98rem;
   outline: none;
-  transition: 0.2s ease;
+  border-radius: 0;
+  transition: .2s ease;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--gold2);
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.13);
-  background: rgba(0, 0, 0, 0.62);
+  border-color: var(--gold-light);
+  background: rgba(255,255,255,.075);
+  box-shadow: 0 0 0 3px rgba(185,148,74,.13);
 }
 
-input::placeholder,
-textarea::placeholder {
-  color: #777;
+input::placeholder {
+  color: #8d8679;
 }
 
 button {
   width: 100%;
-  margin-top: 18px;
-  padding: 16px 18px;
-  border: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  color: #050505;
-  font-weight: 950;
-  font-size: 1rem;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold-light);
+  padding: 16px 20px;
+  font-family: Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: 0.22s ease;
-  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.22);
+  transition: .22s ease;
+  border-radius: 0;
 }
 
 button:hover {
+  background: var(--gold);
+  color: #050505;
   transform: translateY(-2px);
-  filter: brightness(1.08);
 }
 
-button:active {
-  transform: scale(0.98);
+form button,
+#message {
+  grid-column: 1 / -1;
 }
 
 #message,
 #loginMessage {
   margin-top: 18px;
-  font-weight: 800;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.055);
+  padding: 14px;
+  border-left: 3px solid var(--gold);
+  background: rgba(255,255,255,.045);
+  color: var(--white);
+  font-family: Arial, sans-serif;
 }
 
 .day-buttons,
 .time-buttons,
 #daysContainer,
 #timesContainer {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .day-button,
 .time-button,
 .day-btn,
 .time-btn {
-  background: rgba(255,255,255,0.065);
-  border: 1px solid rgba(212,175,55,0.24);
-  color: #fff;
+  background: rgba(255,255,255,.035);
+  color: var(--white);
+  border: 1px solid rgba(185,148,74,.28);
   box-shadow: none;
-}
-
-.day-button:hover,
-.time-button:hover,
-.day-btn:hover,
-.time-btn:hover {
-  background: rgba(212, 175, 55, 0.15);
 }
 
 .day-button.active,
@@ -207,7 +226,7 @@ button:active {
 .day-btn.active,
 .time-btn.active,
 .selected {
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  background: var(--gold);
   color: #050505;
 }
 
@@ -216,26 +235,27 @@ button:active {
 .day-btn:disabled,
 .time-btn:disabled,
 button.disabled {
-  opacity: 0.35;
+  opacity: .28;
   cursor: not-allowed;
-  background: #333;
-  color: #aaa;
+  background: #222;
+  color: #777;
   transform: none;
-  box-shadow: none;
 }
 
 .admin-item {
-  background: var(--card2);
-  border: 1px solid rgba(212,175,55,0.18);
-  border-radius: 20px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(185,148,74,.25);
   padding: 18px;
   margin: 14px 0;
+  font-family: Arial, sans-serif;
 }
 
 .admin-item strong {
   display: block;
-  color: var(--gold2);
+  color: var(--gold-light);
   margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .admin-item p {
@@ -243,9 +263,13 @@ button.disabled {
 }
 
 .admin-item button {
-  background: linear-gradient(135deg, #991b1b, var(--danger));
-  color: #fff;
-  box-shadow: 0 12px 32px rgba(220, 38, 38, 0.18);
+  border-color: var(--danger);
+  color: #ffdddd;
+}
+
+.admin-item button:hover {
+  background: var(--danger);
+  color: white;
 }
 
 #appointmentsList,
@@ -254,11 +278,11 @@ button.disabled {
 }
 
 .success {
-  color: var(--success);
+  color: #4ade80;
 }
 
 .error {
-  color: #ff5c5c;
+  color: #ff6b6b;
 }
 
 .warning {
@@ -266,50 +290,30 @@ button.disabled {
 }
 
 a {
-  color: var(--gold2);
-  text-decoration: none;
+  color: var(--gold-light);
 }
 
-a:hover {
-  text-decoration: underline;
-}
-
-@media (min-width: 900px) {
-  .card {
-    margin-top: 26px;
-  }
-
-  form {
-    grid-template-columns: 1fr 1fr;
-    column-gap: 18px;
-  }
-
-  form button,
-  #message {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 768px) {
-  body {
+@media (max-width: 760px) {
+  .container {
     padding: 14px;
   }
 
   .card {
-    padding: 24px;
-    border-radius: 24px;
-  }
-
-  .card::before {
-    font-size: 0.65rem;
+    padding: 30px 20px;
+    min-height: auto;
   }
 
   h1 {
-    font-size: 2.1rem;
+    font-size: 2.6rem;
   }
 
-  h2 {
-    font-size: 1.22rem;
+  form {
+    grid-template-columns: 1fr;
+  }
+
+  form button,
+  #message {
+    grid-column: auto;
   }
 
   .day-buttons,
@@ -317,13 +321,5 @@ a:hover {
   #daysContainer,
   #timesContainer {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  input,
-  select,
-  textarea,
-  button {
-    padding: 14px;
-    font-size: 0.95rem;
   }
 }

@@ -2,378 +2,159 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barbearia Prime</title>
-
-  <link rel="stylesheet" href="style.css"/>
-
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-  />
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <header class="header">
-    <div class="logo">Barbearia Prime</div>
+  <header class="site-header">
+    <a href="#" class="logo">Barbearia Prime</a>
 
     <nav>
       <a href="#sobre">Sobre</a>
-      <a href="#galeria">Cortes</a>
-      <a href="#agendamento">Agendar</a>
+      <a href="#cortes">Cortes</a>
+      <a href="#agendar">Agendar</a>
       <a href="#contato">Contato</a>
     </nav>
   </header>
 
-  <section class="hero">
-    <div class="background-slider">
-      <div class="slide slide1"></div>
-      <div class="slide slide2"></div>
-      <div class="slide slide3"></div>
-    </div>
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <span class="eyebrow">Barbearia Premium</span>
+        <h1>A barbearia mais braba da cidade</h1>
+        <p>
+          Cortes modernos, barba, degradê, acabamento profissional e atendimento
+          premium para quem valoriza estilo e presença.
+        </p>
+        <a href="#agendar" class="hero-btn">Agendar horário</a>
+      </div>
 
-    <div class="hero-content">
-      <h1>A BARBEARIA MAIS <span>BRABA</span> DA CIDADE</h1>
+      <div class="hero-image">
+        <img
+          src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=900&q=80"
+          alt="Barbeiro cortando cabelo"
+        />
+      </div>
+    </section>
 
-      <p>
-        Cortes modernos, barba, degradê, acabamento profissional e atendimento premium.
-      </p>
+    <section class="section" id="sobre">
+      <div class="section-text">
+        <span class="eyebrow">Sobre a barbearia</span>
+        <h2>Experiência, estilo e atendimento de respeito</h2>
+        <p>
+          A Barbearia Prime nasceu com o objetivo de entregar mais do que um corte:
+          uma experiência completa. Trabalhamos com cortes modernos, barba,
+          degradê, sobrancelha e acabamento premium.
+        </p>
+      </div>
 
-      <a href="#agendamento" class="btn">AGENDAR HORÁRIO</a>
-    </div>
-  </section>
+      <div class="info-card">
+        <h3>Funcionamento</h3>
+        <p>Segunda a Sexta</p>
+        <strong>08:00 às 20:00</strong>
+      </div>
+    </section>
 
-  <section class="section about" id="sobre">
-    <div class="about-text">
-      <h2>Sobre a Barbearia</h2>
+    <section class="section cuts-section" id="cortes">
+      <div class="section-text">
+        <span class="eyebrow">Cortes e estilos</span>
+        <h2>Visual profissional para cada estilo</h2>
+      </div>
 
-      <p>
-        A Barbearia Prime nasceu com o objetivo de trazer estilo,
-        confiança e atendimento profissional para todos os clientes.
-      </p>
+      <div class="cuts-grid">
+        <article class="cut-card">
+          <img
+            src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=700&q=80"
+            alt="Corte masculino"
+          />
+          <h3>Corte Masculino</h3>
+          <p>Acabamento moderno, limpo e alinhado ao seu estilo.</p>
+        </article>
 
-      <p>
-        Trabalhamos com cortes modernos, barba, degradê,
-        sobrancelha e acabamento premium.
-      </p>
+        <article class="cut-card">
+          <img
+            src="https://images.unsplash.com/photo-1622286346003-c7770d7417e1?auto=format&fit=crop&w=700&q=80"
+            alt="Barba"
+          />
+          <h3>Barba</h3>
+          <p>Modelagem, alinhamento e finalização profissional.</p>
+        </article>
 
-      <p>
-        Nosso espaço foi desenvolvido para oferecer conforto,
-        experiência e qualidade em cada atendimento.
-      </p>
-    </div>
+        <article class="cut-card">
+          <img
+            src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=700&q=80"
+            alt="Barbearia"
+          />
+          <h3>Degradê</h3>
+          <p>Degradê bem marcado, sombreado e acabamento na navalha.</p>
+        </article>
+      </div>
+    </section>
 
-    <div class="about-card">
-      <h3>Funcionamento</h3>
-      <p>Segunda à Sexta</p>
-      <strong>08:00 às 20:00</strong>
-    </div>
-  </section>
+    <section class="booking-section" id="agendar">
+      <div class="booking-text">
+        <span class="eyebrow">Agendamento online</span>
+        <h2>Escolha seu dia e horário</h2>
+        <p>
+          Selecione seus dados, escolha o serviço, o dia disponível e depois o
+          horário. Horários já agendados ou bloqueados ficam indisponíveis.
+        </p>
+      </div>
 
-  <section class="section" id="galeria">
-    <h2 class="center">Cortes e Estilos</h2>
-
-    <div class="gallery">
-      <img src="https://images.unsplash.com/photo-1512690459411-b9245aed614b?auto=format&fit=crop&w=800&q=80">
-      <img src="https://images.unsplash.com/photo-1622286346003-c1c7e63b1088?auto=format&fit=crop&w=800&q=80">
-      <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=800&q=80">
-      <img src="https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=800&q=80">
-    </div>
-  </section>
-
-  <section class="section appointment-section" id="agendamento">
-    <h2 class="center">Agende seu Horário</h2>
-
-    <p class="subtitle">
-      Escolha o dia e toque no horário desejado.
-    </p>
-
-    <div class="appointment-box">
-      <form id="appointmentForm">
-        <label>Nome</label>
-        <input type="text" id="name" placeholder="Digite seu nome" required />
-
-        <label>WhatsApp</label>
-        <input type="text" id="phone" placeholder="(43) 99999-9999" required />
-
-        <label>Serviço</label>
-        <select id="service" required>
-          <option value="">Selecione</option>
-          <option value="Corte Masculino">Corte Masculino</option>
-          <option value="Barba">Barba</option>
-          <option value="Corte + Barba">Corte + Barba</option>
-          <option value="Degradê">Degradê</option>
-          <option value="Sobrancelha">Sobrancelha</option>
-        </select>
-
-        <label>Escolha o dia</label>
-        <div id="daysContainer" class="days-container"></div>
-
-        <label>Horários disponíveis</label>
-        <div id="timesContainer" class="times-container">
-          <p class="empty-time">Escolha um dia primeiro</p>
+      <form id="appointmentForm" class="booking-form">
+        <div class="form-group">
+          <label for="name">Nome</label>
+          <input type="text" id="name" placeholder="Digite seu nome" required />
         </div>
 
-        <button type="submit">CONFIRMAR AGENDAMENTO</button>
+        <div class="form-group">
+          <label for="phone">WhatsApp</label>
+          <input type="text" id="phone" placeholder="(43) 99999-9999" required />
+        </div>
+
+        <div class="form-group full">
+          <label for="service">Serviço</label>
+          <select id="service" required>
+            <option value="">Selecione</option>
+            <option value="Corte Masculino">Corte Masculino</option>
+            <option value="Barba">Barba</option>
+            <option value="Corte + Barba">Corte + Barba</option>
+            <option value="Degradê">Degradê</option>
+            <option value="Sobrancelha">Sobrancelha</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Escolha o dia</label>
+          <div id="daysContainer" class="day-buttons"></div>
+        </div>
+
+        <div class="form-group full">
+          <label>Escolha o horário</label>
+          <div id="timesContainer" class="time-buttons"></div>
+        </div>
+
+        <input type="hidden" id="date" />
+        <input type="hidden" id="time" />
+
+        <button type="submit">Confirmar agendamento</button>
 
         <p id="message"></p>
       </form>
-    </div>
-  </section>
+    </section>
 
-  <section class="section contact" id="contato">
-    <h2>Contato</h2>
+    <section class="section contact-section" id="contato">
+      <div>
+        <span class="eyebrow">Contato</span>
+        <h2>Fale com a barbearia</h2>
+        <p>Endereço, WhatsApp e redes sociais podem ser adicionados aqui.</p>
+      </div>
 
-    <p>Rua Exemplo, 123 - Centro - Paraná</p>
+      <a class="hero-btn" href="#agendar">Agendar agora</a>
+    </section>
+  </main>
 
-    <div class="social-icons">
-      <a href="https://instagram.com" target="_blank">
-        <i class="fab fa-instagram"></i>
-      </a>
-
-      <a href="https://wa.me/5543999999999" target="_blank">
-        <i class="fab fa-whatsapp"></i>
-      </a>
-    </div>
-  </section>
-
-  <footer>
-    <p>© 2026 Barbearia Prime - Todos os direitos reservados.</p>
-  </footer>
-
-  <script>
-    const API_URL = "https://barbearia-ygxt.onrender.com/api";
-
-    const daysContainer = document.getElementById("daysContainer");
-    const timesContainer = document.getElementById("timesContainer");
-    const form = document.getElementById("appointmentForm");
-    const message = document.getElementById("message");
-
-    let selectedDate = "";
-    let selectedTime = "";
-    let currentPage = 0;
-
-    const DAYS_PER_PAGE = 10;
-    const MAX_DAYS_AHEAD = 365;
-
-    function formatDateToInput(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
-    }
-
-    function formatDayLabel(date) {
-      const weekDay = date.toLocaleDateString("pt-BR", {
-        weekday: "long"
-      });
-
-      const dayMonth = date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit"
-      });
-
-      return `${weekDay} ${dayMonth}`;
-    }
-
-    function isWeekday(date) {
-      const day = date.getDay();
-
-      return day >= 1 && day <= 5;
-    }
-
-    function clearSelection() {
-      selectedDate = "";
-      selectedTime = "";
-      message.textContent = "";
-
-      timesContainer.innerHTML = `
-        <p class="empty-time">Escolha um dia primeiro</p>
-      `;
-    }
-
-    function createDayButtons() {
-      daysContainer.innerHTML = "";
-
-      const today = new Date();
-      let createdDays = 0;
-      let addDays = currentPage * DAYS_PER_PAGE;
-
-      while (createdDays < DAYS_PER_PAGE && addDays <= MAX_DAYS_AHEAD) {
-        const date = new Date();
-        date.setDate(today.getDate() + addDays);
-
-        if (isWeekday(date)) {
-          const button = document.createElement("button");
-
-          button.type = "button";
-          button.className = "day-button";
-          button.dataset.date = formatDateToInput(date);
-          button.textContent = formatDayLabel(date);
-
-          button.addEventListener("click", () => {
-            document.querySelectorAll(".day-button").forEach((btn) => {
-              btn.classList.remove("active");
-            });
-
-            button.classList.add("active");
-
-            selectedDate = button.dataset.date;
-            selectedTime = "";
-
-            loadTimes(selectedDate);
-          });
-
-          daysContainer.appendChild(button);
-          createdDays++;
-        }
-
-        addDays++;
-      }
-
-      const nav = document.createElement("div");
-      nav.className = "days-navigation";
-
-      const prevButton = document.createElement("button");
-      prevButton.type = "button";
-      prevButton.className = "nav-day-button";
-      prevButton.textContent = "← Dias anteriores";
-      prevButton.disabled = currentPage === 0;
-
-      prevButton.addEventListener("click", () => {
-        if (currentPage > 0) {
-          currentPage--;
-          clearSelection();
-          createDayButtons();
-        }
-      });
-
-      const nextButton = document.createElement("button");
-      nextButton.type = "button";
-      nextButton.className = "nav-day-button";
-      nextButton.textContent = "Próximos dias →";
-
-      nextButton.addEventListener("click", () => {
-        currentPage++;
-        clearSelection();
-        createDayButtons();
-      });
-
-      nav.appendChild(prevButton);
-      nav.appendChild(nextButton);
-
-      daysContainer.appendChild(nav);
-    }
-
-    async function loadTimes(date) {
-      timesContainer.innerHTML = `
-        <p class="empty-time">Carregando horários...</p>
-      `;
-
-      message.textContent = "";
-
-      try {
-        const response = await fetch(`${API_URL}/times?date=${date}`);
-        const data = await response.json();
-
-        timesContainer.innerHTML = "";
-
-        if (!data.available || data.available.length === 0) {
-          timesContainer.innerHTML = `
-            <p class="empty-time">
-              Nenhum horário disponível para esse dia.
-            </p>
-          `;
-
-          return;
-        }
-
-        data.available.forEach((time) => {
-          const button = document.createElement("button");
-
-          button.type = "button";
-          button.className = "time-button";
-          button.textContent = time;
-          button.dataset.time = time;
-
-          button.addEventListener("click", () => {
-            document.querySelectorAll(".time-button").forEach((btn) => {
-              btn.classList.remove("active");
-            });
-
-            button.classList.add("active");
-            selectedTime = time;
-          });
-
-          timesContainer.appendChild(button);
-        });
-      } catch (error) {
-        timesContainer.innerHTML = `
-          <p class="empty-time">
-            Erro ao buscar horários.
-          </p>
-        `;
-      }
-    }
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const appointment = {
-        name: document.getElementById("name").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        service: document.getElementById("service").value,
-        date: selectedDate,
-        time: selectedTime
-      };
-
-      if (!appointment.date) {
-        message.style.color = "#ff5c5c";
-        message.textContent = "Escolha um dia.";
-        return;
-      }
-
-      if (!appointment.time) {
-        message.style.color = "#ff5c5c";
-        message.textContent = "Escolha um horário.";
-        return;
-      }
-
-      message.style.color = "#fff";
-      message.textContent = "Confirmando agendamento...";
-
-      try {
-        const response = await fetch(`${API_URL}/appointments`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(appointment)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          message.style.color = "#ff5c5c";
-          message.textContent = data.error || "Erro ao agendar.";
-          return;
-        }
-
-        message.style.color = "#4dff88";
-        message.textContent = "Agendamento confirmado com sucesso!";
-
-        form.reset();
-        selectedTime = "";
-
-        loadTimes(selectedDate);
-      } catch (error) {
-        message.style.color = "#ff5c5c";
-        message.textContent = "Erro de conexão com o servidor.";
-      }
-    });
-
-    createDayButtons();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
