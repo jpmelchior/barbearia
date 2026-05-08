@@ -1,4 +1,3 @@
-
 <!-- frontend/admin.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -11,17 +10,16 @@
   <title>Painel Admin | Barbearia Prime</title>
 
   <link rel="stylesheet" href="style.css" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel Admin - Barbearia</title>
-  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
+<header class="admin-header">
+  <div>
+    <span class="admin-tag">Painel administrativo</span>
     <h1>Controle da Barbearia</h1>
   </div>
 
   <button id="logoutBtn" class="logout-btn" type="button">
-  <button id="logoutBtn" class="logout-btn">
     Sair
   </button>
 </header>
@@ -29,15 +27,12 @@
 <main class="admin-container">
 
   <section class="admin-login-card" id="loginSection" aria-labelledby="login-title">
-  <section class="admin-login-card" id="loginSection">
 
     <span class="tag">Login admin</span>
 
     <h2 id="login-title">Acesso restrito</h2>
-    <h2>Acesso restrito</h2>
 
     <form id="loginForm" class="admin-login-grid" autocomplete="on">
-    <div class="admin-login-grid">
 
       <div class="field">
         <label for="adminUser">Usuário</label>
@@ -49,8 +44,6 @@
           autocomplete="username"
           required
         />
-        <label>Usuário</label>
-        <input type="text" id="adminUser" placeholder="Digite o usuário">
       </div>
 
       <div class="field">
@@ -63,43 +56,42 @@
           autocomplete="current-password"
           required
         />
-        <label>Senha</label>
-        <input type="password" id="adminPassword" placeholder="Digite a senha">
       </div>
 
       <button id="loginBtn" class="submit-btn" type="submit">
         Entrar no painel
       </button>
-    </div>
 
       <p id="loginMessage" role="status" aria-live="polite"></p>
-    <button id="loginBtn" class="submit-btn">
-      Entrar no painel
-    </button>
 
     </form>
-    <p id="loginMessage"></p>
 
   </section>
 
   <section class="dashboard" id="dashboardSection" aria-labelledby="dashboard-title">
 
     <h2 id="dashboard-title" class="sr-only">Resumo administrativo</h2>
-  <section class="dashboard" id="dashboardSection">
 
     <div class="dashboard-grid">
 
+      <div class="dashboard-card">
+        <span>Total de agendamentos</span>
+        <strong id="appointmentsCount">0</strong>
+      </div>
+
+      <div class="dashboard-card">
+        <span>Total de bloqueios</span>
+        <strong id="blocksCount">0</strong>
+      </div>
 
     </div>
 
     <section class="admin-block-section" aria-labelledby="blocks-title">
-    <section class="admin-block-section">
 
       <div class="admin-block-header">
         <div>
           <span class="tag">Bloquear horários</span>
           <h2 id="blocks-title">Gerenciar bloqueios</h2>
-          <h2>Gerenciar bloqueios</h2>
         </div>
       </div>
 
@@ -108,15 +100,11 @@
         <div class="field">
           <label for="blockDate">Data</label>
           <input type="date" id="blockDate" name="date" required />
-          <label>Data</label>
-          <input type="date" id="blockDate">
         </div>
 
         <div class="field">
           <label for="blockTime">Horário (opcional)</label>
           <input type="time" id="blockTime" name="time" />
-          <label>Horário (opcional)</label>
-          <input type="time" id="blockTime">
         </div>
 
         <div class="field full">
@@ -129,39 +117,50 @@
             maxlength="120"
             required
           />
-          <label>Motivo</label>
-          <input type="text" id="blockReason" placeholder="Ex: Viagem, feriado, manutenção">
         </div>
 
         <button type="submit" class="submit-btn">
+          Criar bloqueio
+        </button>
+
+      </form>
+
+    </section>
+
+    <section class="admin-content-grid">
+
+      <div class="admin-panel-card">
+
+        <div class="panel-header">
+          <div>
+            <span class="tag">Agendamentos</span>
+            <h2>Horários marcados</h2>
           </div>
-        </div>
-
-        <div class="admin-day-controls" aria-label="Navegar pelos dias dos agendamentos">
-          <button id="prevAppointmentsDay" class="pagination-btn" type="button">
-        <div class="admin-day-controls">
-          <button id="prevAppointmentsDay" type="button" class="pagination-btn">
-            ← Dia anterior
-          </button>
-
-            <strong id="appointmentsDateLabel">--/--</strong>
-          </div>
-
-          <button id="nextAppointmentsDay" class="pagination-btn" type="button">
-          <button id="nextAppointmentsDay" type="button" class="pagination-btn">
-            Próximo dia →
-          </button>
         </div>
 
         <div id="appointmentsList" class="admin-list" aria-live="polite"></div>
-        <div id="appointmentsList" class="admin-list"></div>
 
       </div>
 
+      <div class="admin-panel-card">
+
+        <div class="panel-header">
+          <div>
+            <span class="tag">Bloqueios</span>
+            <h2>Dias e horários bloqueados</h2>
           </div>
         </div>
 
         <div id="blocksList" class="admin-list" aria-live="polite"></div>
-        <div id="blocksList" class="admin-list"></div>
 
       </div>
+
+    </section>
+
+  </section>
+
+</main>
+
+<script src="admin.js"></script>
+</body>
+</html>
