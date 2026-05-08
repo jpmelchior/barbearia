@@ -3,16 +3,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Barbearia Prime</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Barbearia Prime: cortes masculinos, degradê profissional, barba alinhada e agendamento online." />
+  <meta name="theme-color" content="#050505" />
+  <meta property="og:title" content="Barbearia Prime" />
+  <meta property="og:description" content="Estilo, presença e respeito em cada atendimento." />
+  <meta property="og:type" content="website" />
+
+  <title>Barbearia Prime | Agendamento Online</title>
+
+  <link rel="preconnect" href="https://images.unsplash.com" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<header class="header">
-  <div class="logo">BARBEARIA PRIME</div>
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
-  <nav class="nav">
+<header class="header">
+  <a class="logo" href="#inicio" aria-label="Barbearia Prime - início">
+    BARBEARIA PRIME
+  </a>
+
+  <nav class="nav" aria-label="Navegação principal">
     <a href="#inicio">Início</a>
     <a href="#sobre">Sobre</a>
     <a href="#servicos">Serviços</a>
@@ -20,165 +32,217 @@
   </nav>
 </header>
 
-<section class="hero" id="inicio">
-  <div class="hero-overlay"></div>
+<main id="conteudo">
+  <section class="hero" id="inicio" aria-labelledby="hero-title">
+    <div class="hero-overlay" aria-hidden="true"></div>
 
-  <div class="hero-content">
-    <span class="tag">Barbearia Premium</span>
+    <div class="hero-content">
+      <span class="tag">Barbearia Premium</span>
 
-    <h1>
-      ESTILO.<br>
-      PRESENÇA.<br>
-      RESPEITO.
-    </h1>
+      <h1 id="hero-title">
+        ESTILO.<br>
+        PRESENÇA.<br>
+        RESPEITO.
+      </h1>
 
-    <p>
-      Cortes modernos, degradê profissional, barba alinhada
-      e atendimento premium para quem exige qualidade.
-    </p>
+      <p>
+        Cortes modernos, degradê profissional, barba alinhada
+        e atendimento premium para quem exige qualidade.
+      </p>
 
-    <a href="#agendamento" class="hero-button">
-      AGENDAR HORÁRIO
-    </a>
-  </div>
-</section>
+      <a href="#agendamento" class="hero-button">
+        AGENDAR HORÁRIO
+      </a>
+    </div>
+  </section>
 
-<section class="section" id="sobre">
-  <div class="section-text">
-    <span class="tag">Sobre nós</span>
+  <section class="section" id="sobre" aria-labelledby="sobre-title">
+    <div class="section-text">
+      <span class="tag">Sobre nós</span>
 
-    <h2>
-      Experiência profissional em cada detalhe
-    </h2>
+      <h2 id="sobre-title">
+        Experiência profissional em cada detalhe
+      </h2>
 
-    <p>
-      Nossa barbearia foi criada para oferecer um ambiente premium,
-      moderno e confortável, focado em cortes de alta qualidade,
-      barba, acabamento e atendimento profissional.
-    </p>
-  </div>
+      <p>
+        Nossa barbearia foi criada para oferecer um ambiente premium,
+        moderno e confortável, focado em cortes de alta qualidade,
+        barba, acabamento e atendimento profissional.
+      </p>
+    </div>
 
-  <div class="info-card">
-    <h3>Funcionamento</h3>
+    <aside class="info-card" aria-label="Horário de funcionamento">
+      <h3>Funcionamento</h3>
 
-    <p>Segunda a Sexta</p>
+      <p>Segunda a Sexta</p>
 
-    <strong>08:00 às 20:00</strong>
-  </div>
-</section>
+      <strong>08:00 às 20:00</strong>
+    </aside>
+  </section>
 
-<section class="services" id="servicos">
-  <span class="tag">Serviços</span>
+  <section class="services" id="servicos" aria-labelledby="servicos-title">
+    <span class="tag">Serviços</span>
 
-  <h2>Nossos serviços</h2>
+    <h2 id="servicos-title">Nossos serviços</h2>
 
-  <div class="services-grid">
+    <div class="services-grid">
 
-    <div class="service-card">
-      <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80">
+      <article class="service-card">
+        <img
+          src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80"
+          alt="Barbeiro finalizando corte masculino"
+          width="1200"
+          height="800"
+          loading="lazy"
+          decoding="async"
+        />
 
-      <div class="service-content">
-        <h3>Corte Masculino</h3>
+        <div class="service-content">
+          <h3>Corte Masculino</h3>
 
-        <p>
-          Corte moderno com acabamento profissional.
-        </p>
+          <p>
+            Corte moderno com acabamento profissional.
+          </p>
+        </div>
+      </article>
+
+      <article class="service-card">
+        <img
+          src="https://images.unsplash.com/photo-1622286346003-c7770d7417e1?auto=format&fit=crop&w=1200&q=80"
+          alt="Barba sendo modelada com acabamento profissional"
+          width="1200"
+          height="800"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div class="service-content">
+          <h3>Barba</h3>
+
+          <p>
+            Alinhamento, modelagem e acabamento.
+          </p>
+        </div>
+      </article>
+
+      <article class="service-card">
+        <img
+          src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80"
+          alt="Ambiente de barbearia com cadeira e ferramentas de corte"
+          width="1200"
+          height="800"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div class="service-content">
+          <h3>Degradê</h3>
+
+          <p>
+            Degradê limpo, sombreado e moderno.
+          </p>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="booking" id="agendamento" aria-labelledby="agendamento-title">
+
+    <div class="booking-left">
+      <span class="tag">Agendamento Online</span>
+
+      <h2 id="agendamento-title">
+        Escolha seu horário
+      </h2>
+
+      <p>
+        Horários ocupados ou bloqueados ficam indisponíveis automaticamente.
+      </p>
+    </div>
+
+    <form id="appointmentForm" class="booking-form" autocomplete="on">
+
+      <div class="field">
+        <label for="name">Nome</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          placeholder="Digite seu nome"
+          autocomplete="name"
+          minlength="2"
+          maxlength="80"
+          required
+        />
       </div>
-    </div>
 
-    <div class="service-card">
-      <img src="https://images.unsplash.com/photo-1622286346003-c7770d7417e1?auto=format&fit=crop&w=1200&q=80">
-
-      <div class="service-content">
-        <h3>Barba</h3>
-
-        <p>
-          Alinhamento, modelagem e acabamento.
-        </p>
+      <div class="field">
+        <label for="phone">WhatsApp</label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          placeholder="(43) 99999-9999"
+          autocomplete="tel"
+          inputmode="tel"
+          maxlength="16"
+          required
+        />
       </div>
-    </div>
 
-    <div class="service-card">
-      <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80">
+      <div class="field full">
+        <label for="service">Serviço</label>
 
-      <div class="service-content">
-        <h3>Degradê</h3>
-
-        <p>
-          Degradê limpo, sombreado e moderno.
-        </p>
+        <select id="service" name="service" required>
+          <option value="">Escolha um serviço</option>
+          <option value="Corte Masculino">Corte Masculino</option>
+          <option value="Barba">Barba</option>
+          <option value="Corte + Barba">Corte + Barba</option>
+          <option value="Degradê">Degradê</option>
+        </select>
       </div>
-    </div>
 
-  </div>
-</section>
+      <div class="field full">
+        <label id="daysLabel">Escolha o dia</label>
 
-<section class="booking" id="agendamento">
-
-  <div class="booking-left">
-    <span class="tag">Agendamento Online</span>
-
-    <h2>
-      Escolha seu horário
-    </h2>
-
-    <p>
-      Horários ocupados ou bloqueados ficam indisponíveis automaticamente.
-    </p>
-  </div>
-
-  <form id="appointmentForm" class="booking-form">
-
-    <div class="field">
-      <label>Nome</label>
-      <input type="text" id="name" placeholder="Digite seu nome">
-    </div>
-
-    <div class="field">
-      <label>WhatsApp</label>
-      <input type="text" id="phone" placeholder="(43) 99999-9999">
-    </div>
-
-    <div class="field full">
-      <label>Serviço</label>
-
-      <select id="service">
-        <option value="">Escolha um serviço</option>
-        <option value="Corte Masculino">Corte Masculino</option>
-        <option value="Barba">Barba</option>
-        <option value="Corte + Barba">Corte + Barba</option>
-        <option value="Degradê">Degradê</option>
-      </select>
-    </div>
-
-    <div class="field full">
-      <label>Escolha o dia</label>
-
-      <div id="daysContainer" class="days-grid"></div>
-    </div>
-
-    <div class="field full">
-      <label>Escolha o horário</label>
-
-      <div id="timesContainer" class="times-grid">
-        <p class="empty-text">
-          Escolha um dia primeiro.
-        </p>
+        <div
+          id="daysContainer"
+          class="days-grid"
+          role="group"
+          aria-labelledby="daysLabel"
+        ></div>
       </div>
-    </div>
 
-    <input type="hidden" id="date">
-    <input type="hidden" id="time">
+      <div class="field full">
+        <label id="timesLabel">Escolha o horário</label>
 
-    <button type="submit" class="submit-btn">
-      CONFIRMAR AGENDAMENTO
-    </button>
+        <div
+          id="timesContainer"
+          class="times-grid"
+          role="group"
+          aria-labelledby="timesLabel"
+          aria-live="polite"
+        >
+          <p class="empty-text">
+            Escolha um dia primeiro.
+          </p>
+        </div>
+      </div>
 
-    <p id="message"></p>
+      <input type="hidden" id="date" name="date" />
+      <input type="hidden" id="time" name="time" />
 
-  </form>
+      <button type="submit" class="submit-btn">
+        CONFIRMAR AGENDAMENTO
+      </button>
 
-</section>
+      <p id="message" role="status" aria-live="polite"></p>
+
+    </form>
+
+  </section>
+</main>
 
 <footer class="footer">
   <p>© 2026 Barbearia Prime</p>
