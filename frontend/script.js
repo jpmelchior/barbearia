@@ -1,3 +1,5 @@
+// frontend/script.js
+
 const API_URL = "https://barbearia-ygxt.onrender.com/api";
 
 const form = document.getElementById("appointmentForm");
@@ -8,67 +10,46 @@ const message = document.getElementById("message");
 const dateInput = document.getElementById("date");
 const timeInput = document.getElementById("time");
 
-let selectedDate = "";
-let selectedTime = "";
+async function loadDays() {
+  try {
+    const response = await fetch(`${API_URL}/days`);
+    const days = await response.json();
 
-function formatDateBR(dateString) {
-  const [year, month, day] = dateString.split("-");
-  return `${day}/${month}`;
-}
+    daysContainer.innerHTML = "";
 
-function getWeekdayName(dateString) {
-  const date = new Date(`${dateString}T12:00:00`);
-  return date.toLocaleDateString("pt-BR", { weekday: "long" });
-}
-
-function generateDays(quantity = 30) {
-  daysContainer.innerHTML = "";
-
-  const today = new Date();
-  let added = 0;
-  let index = 0;
-
-  while (added < quantity) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + index);
-
-    const day = date.getDay();
-
-    if (day !== 0 && day !== 6) {
-      const dateString = date.toISOString().split("T")[0];
-
+    days.forEach((day) => {
       const button = document.createElement("button");
+
       button.type = "button";
-      button.textContent = `${getWeekdayName(dateString)} ${formatDateBR(dateString)}`;
-      button.dataset.date = dateString;
+      button.className = "day-btn";
+
+      button.innerHTML = `
+        <span>${day.weekday}</span>
+        <strong>${day.day}/${day.month}</strong>
+      `;
 
       button.addEventListener("click", () => {
-        document.querySelectorAll("#daysContainer button").forEach(btn => {
+        document.querySelectorAll(".day-btn").forEach((btn) => {
           btn.classList.remove("active");
         });
 
         button.classList.add("active");
 
-        selectedDate = dateString;
-        selectedTime = "";
-
-        dateInput.value = selectedDate;
+        dateInput.value = day.date;
         timeInput.value = "";
 
-        loadTimes(selectedDate);
+        loadTimes(day.date);
       });
 
       daysContainer.appendChild(button);
-      added++;
-    }
-
-    index++;
+    });
+  } catch (error) {
+    daysContainer.innerHTML = `<p>Erro ao carregar dias.</p>`;
   }
 }
 
 async function loadTimes(date) {
-  timesContainer.innerHTML = "<p>Carregando horários...</p>";
-  message.textContent = "";
+  timesContainer.innerHTML = `<p class="empty-text">Carregando horários...</p>`;
 
   try {
     const response = await fetch(`${API_URL}/times?date=${date}`);
@@ -76,32 +57,48 @@ async function loadTimes(date) {
 
     timesContainer.innerHTML = "";
 
-    if (!data.available || data.available.length === 0) {
-      timesContainer.innerHTML = "<p>Nenhum horário disponível para este dia.</p>";
+    if (!data.times || data.times.length === 0) {
+      timesContainer.innerHTML = `
+        <p class="empty-text">
+          Nenhum horário disponível.
+        </p>
+      `;
       return;
     }
 
-    data.available.forEach(time => {
+    data.times.forEach((item) => {
       const button = document.createElement("button");
+
       button.type = "button";
-      button.textContent = time;
-      button.dataset.time = time;
+      button.className = "time-btn";
+
+      button.textContent = item.time;
+
+      if (!item.available) {
+        button.classList.add("disabled");
+        button.disabled = true;
+
+        button.title = item.reason || "Horário indisponível";
+      }
 
       button.addEventListener("click", () => {
-        document.querySelectorAll("#timesContainer button").forEach(btn => {
+        document.querySelectorAll(".time-btn").forEach((btn) => {
           btn.classList.remove("active");
         });
 
         button.classList.add("active");
 
-        selectedTime = time;
-        timeInput.value = selectedTime;
+        timeInput.value = item.time;
       });
 
       timesContainer.appendChild(button);
     });
   } catch (error) {
-    timesContainer.innerHTML = "<p>Erro ao carregar horários.</p>";
+    timesContainer.innerHTML = `
+      <p class="empty-text">
+        Erro ao carregar horários.
+      </p>
+    `;
   }
 }
 
@@ -116,8 +113,14 @@ form.addEventListener("submit", async (event) => {
     time: timeInput.value,
   };
 
-  if (!appointment.name || !appointment.phone || !appointment.service || !appointment.date || !appointment.time) {
-    message.textContent = "Preencha todos os campos e escolha dia e horário.";
+  if (
+    !appointment.name ||
+    !appointment.phone ||
+    !appointment.service ||
+    !appointment.date ||
+    !appointment.time
+  ) {
+    message.textContent = "Preencha todos os campos.";
     return;
   }
 
@@ -127,9 +130,9 @@ form.addEventListener("submit", async (event) => {
     const response = await fetch(`${API_URL}/appointments`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(appointment)
+      body: JSON.stringify(appointment),
     });
 
     const data = await response.json();
@@ -139,21 +142,26 @@ form.addEventListener("submit", async (event) => {
       return;
     }
 
-    message.textContent = "Agendamento confirmado com sucesso!";
+    message.textContent = "Agendamento realizado com sucesso!";
 
     form.reset();
-    selectedDate = "";
-    selectedTime = "";
+
     dateInput.value = "";
     timeInput.value = "";
 
-    document.querySelectorAll("#daysContainer button").forEach(btn => btn.classList.remove("active"));
-    timesContainer.innerHTML = "";
+    timesContainer.innerHTML = `
+      <p class="empty-text">
+        Escolha um dia primeiro.
+      </p>
+    `;
 
-    generateDays();
+    document.querySelectorAll(".day-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+
   } catch (error) {
-    message.textContent = "Erro ao conectar com o servidor.";
+    message.textContent = "Erro ao conectar ao servidor.";
   }
 });
 
-generateDays();
+loadDays();
