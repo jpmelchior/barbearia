@@ -1,4 +1,3 @@
-
 // backend/database.js
 
 const path = require("path");
@@ -11,7 +10,6 @@ const db = new sqlite3.Database(databasePath, (err) => {
     process.exit(1);
   }
 });
-const db = new sqlite3.Database("./barbearia.db");
 
 db.serialize(() => {
   db.run("PRAGMA journal_mode = WAL");
@@ -20,6 +18,21 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS appointments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      service TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(date, time)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS blocked_times (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      time TEXT,
       reason TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -35,3 +48,5 @@ db.serialize(() => {
     ON blocked_times(date, time)
   `);
 });
+
+module.exports = db;
