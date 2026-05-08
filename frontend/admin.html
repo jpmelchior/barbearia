@@ -11,7 +11,7 @@
 
     <section class="login-box" id="loginBox">
       <h1>Painel Admin</h1>
-      <p>Acesse para gerenciar a barbearia.</p>
+      <p>Acesse para gerenciar os horários.</p>
 
       <form id="loginForm">
         <input type="text" id="adminUser" placeholder="Usuário" required />
@@ -26,8 +26,8 @@
 
       <header class="panel-header">
         <div>
-          <h1>Administração</h1>
-          <p>Agendamentos e bloqueios</p>
+          <h1>Painel da Barbearia</h1>
+          <p>Agendamentos separados por dia</p>
         </div>
 
         <div class="header-actions">
@@ -36,18 +36,24 @@
         </div>
       </header>
 
+      <section class="tabs">
+        <button class="tab active" data-tab="scheduled">Próximos horários</button>
+        <button class="tab" data-tab="completed">Horários já atendidos</button>
+      </section>
+
       <section class="admin-grid">
 
         <div class="card">
-          <h2>Agendamentos</h2>
-          <p class="subtitle">Mostrando 5 por página</p>
+          <div id="scheduledSection">
+            <h2>Próximos horários</h2>
+            <p class="subtitle">Horários ativos, organizados por dia.</p>
+            <div id="appointmentsList" class="appointments-list"></div>
+          </div>
 
-          <div id="appointmentsList" class="appointments-list"></div>
-
-          <div class="pagination">
-            <button id="prevPage">Anterior</button>
-            <span id="pageInfo">Página 1</span>
-            <button id="nextPage">Próxima</button>
+          <div id="completedSection" class="hidden">
+            <h2>Histórico de atendimentos</h2>
+            <p class="subtitle">Clientes movidos automaticamente após 3 horas do horário marcado.</p>
+            <div id="completedList" class="appointments-list"></div>
           </div>
         </div>
 
@@ -68,14 +74,14 @@
 
             <label>
               Motivo
-              <input type="text" id="blockReason" placeholder="Ex: viagem, compromisso, manutenção..." required />
+              <input type="text" id="blockReason" placeholder="Ex: viagem, compromisso..." required />
             </label>
 
             <button type="submit">Bloquear</button>
           </form>
 
           <div class="info-box">
-            <strong>Como funciona:</strong>
+            <strong>Como funciona</strong>
             <p>Se deixar o horário vazio, bloqueia o dia inteiro. Se colocar horário, bloqueia somente aquele horário.</p>
           </div>
 
