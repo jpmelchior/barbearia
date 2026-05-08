@@ -1,166 +1,49 @@
-<!-- frontend/admin.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#050505" />
-
-  <title>Painel Admin | Barbearia Prime</title>
-
-  <link rel="stylesheet" href="style.css" />
+  <title>Painel Admin - Barbearia Prime</title>
+  <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
+  <main class="admin-container">
+    <section class="login-box" id="loginBox">
+      <h1>Painel Admin</h1>
+      <p>Entre para ver os agendamentos.</p>
 
-<header class="admin-header">
-  <div>
-    <span class="admin-tag">Painel administrativo</span>
-    <h1>Controle da Barbearia</h1>
-  </div>
-
-  <button id="logoutBtn" class="logout-btn" type="button">
-    Sair
-  </button>
-</header>
-
-<main class="admin-container">
-
-  <section class="admin-login-card" id="loginSection" aria-labelledby="login-title">
-
-    <span class="tag">Login admin</span>
-
-    <h2 id="login-title">Acesso restrito</h2>
-
-    <form id="loginForm" class="admin-login-grid" autocomplete="on">
-
-      <div class="field">
-        <label for="adminUser">Usuário</label>
-        <input
-          type="text"
-          id="adminUser"
-          name="username"
-          placeholder="Digite o usuário"
-          autocomplete="username"
-          required
-        />
-      </div>
-
-      <div class="field">
-        <label for="adminPassword">Senha</label>
-        <input
-          type="password"
-          id="adminPassword"
-          name="password"
-          placeholder="Digite a senha"
-          autocomplete="current-password"
-          required
-        />
-      </div>
-
-      <button id="loginBtn" class="submit-btn" type="submit">
-        Entrar no painel
-      </button>
-
-      <p id="loginMessage" role="status" aria-live="polite"></p>
-
-    </form>
-
-  </section>
-
-  <section class="dashboard" id="dashboardSection" aria-labelledby="dashboard-title">
-
-    <h2 id="dashboard-title" class="sr-only">Resumo administrativo</h2>
-
-    <div class="dashboard-grid">
-
-      <div class="dashboard-card">
-        <span>Total de agendamentos</span>
-        <strong id="appointmentsCount">0</strong>
-      </div>
-
-      <div class="dashboard-card">
-        <span>Total de bloqueios</span>
-        <strong id="blocksCount">0</strong>
-      </div>
-
-    </div>
-
-    <section class="admin-block-section" aria-labelledby="blocks-title">
-
-      <div class="admin-block-header">
-        <div>
-          <span class="tag">Bloquear horários</span>
-          <h2 id="blocks-title">Gerenciar bloqueios</h2>
-        </div>
-      </div>
-
-      <form id="blockForm" class="admin-form">
-
-        <div class="field">
-          <label for="blockDate">Data</label>
-          <input type="date" id="blockDate" name="date" required />
-        </div>
-
-        <div class="field">
-          <label for="blockTime">Horário (opcional)</label>
-          <input type="time" id="blockTime" name="time" />
-        </div>
-
-        <div class="field full">
-          <label for="blockReason">Motivo</label>
-          <input
-            type="text"
-            id="blockReason"
-            name="reason"
-            placeholder="Ex: Viagem, feriado, manutenção"
-            maxlength="120"
-            required
-          />
-        </div>
-
-        <button type="submit" class="submit-btn">
-          Criar bloqueio
-        </button>
-
+      <form id="loginForm">
+        <input type="text" id="adminUser" placeholder="Usuário" required />
+        <input type="password" id="adminPassword" placeholder="Senha" required />
+        <button type="submit">Entrar</button>
       </form>
 
+      <p id="loginMessage" class="message"></p>
     </section>
 
-    <section class="admin-content-grid">
-
-      <div class="admin-panel-card">
-
-        <div class="panel-header">
-          <div>
-            <span class="tag">Agendamentos</span>
-            <h2>Horários marcados</h2>
-          </div>
+    <section class="panel hidden" id="adminPanel">
+      <header class="panel-header">
+        <div>
+          <h1>Agendamentos</h1>
+          <p>Mostrando 5 por página</p>
         </div>
 
-        <div id="appointmentsList" class="admin-list" aria-live="polite"></div>
-
-      </div>
-
-      <div class="admin-panel-card">
-
-        <div class="panel-header">
-          <div>
-            <span class="tag">Bloqueios</span>
-            <h2>Dias e horários bloqueados</h2>
-          </div>
+        <div class="header-actions">
+          <button id="refreshBtn">Atualizar</button>
+          <button id="logoutBtn" class="logout">Sair</button>
         </div>
+      </header>
 
-        <div id="blocksList" class="admin-list" aria-live="polite"></div>
+      <section id="appointmentsList" class="appointments-list"></section>
 
+      <div class="pagination">
+        <button id="prevPage">Anterior</button>
+        <span id="pageInfo">Página 1</span>
+        <button id="nextPage">Próxima</button>
       </div>
-
     </section>
+  </main>
 
-  </section>
-
-</main>
-
-<script src="admin.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
