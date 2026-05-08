@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Admin - Barbearia Prime</title>
+  <title>Painel Admin - Barbearia</title>
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
   <main class="admin-container">
+
     <section class="login-box" id="loginBox">
       <h1>Painel Admin</h1>
-      <p>Entre para ver os agendamentos.</p>
+      <p>Acesse para gerenciar a barbearia.</p>
 
       <form id="loginForm">
         <input type="text" id="adminUser" placeholder="Usuário" required />
@@ -22,10 +23,11 @@
     </section>
 
     <section class="panel hidden" id="adminPanel">
+
       <header class="panel-header">
         <div>
-          <h1>Agendamentos</h1>
-          <p>Mostrando 5 por página</p>
+          <h1>Administração</h1>
+          <p>Agendamentos e bloqueios</p>
         </div>
 
         <div class="header-actions">
@@ -34,14 +36,57 @@
         </div>
       </header>
 
-      <section id="appointmentsList" class="appointments-list"></section>
+      <section class="admin-grid">
 
-      <div class="pagination">
-        <button id="prevPage">Anterior</button>
-        <span id="pageInfo">Página 1</span>
-        <button id="nextPage">Próxima</button>
-      </div>
+        <div class="card">
+          <h2>Agendamentos</h2>
+          <p class="subtitle">Mostrando 5 por página</p>
+
+          <div id="appointmentsList" class="appointments-list"></div>
+
+          <div class="pagination">
+            <button id="prevPage">Anterior</button>
+            <span id="pageInfo">Página 1</span>
+            <button id="nextPage">Próxima</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Bloquear dia ou horário</h2>
+          <p class="subtitle">Use quando o barbeiro não puder atender.</p>
+
+          <form id="blockForm" class="block-form">
+            <label>
+              Data
+              <input type="date" id="blockDate" required />
+            </label>
+
+            <label>
+              Horário opcional
+              <input type="time" id="blockTime" />
+            </label>
+
+            <label>
+              Motivo
+              <input type="text" id="blockReason" placeholder="Ex: viagem, compromisso, manutenção..." required />
+            </label>
+
+            <button type="submit">Bloquear</button>
+          </form>
+
+          <div class="info-box">
+            <strong>Como funciona:</strong>
+            <p>Se deixar o horário vazio, bloqueia o dia inteiro. Se colocar horário, bloqueia somente aquele horário.</p>
+          </div>
+
+          <h3>Bloqueios ativos</h3>
+          <div id="blocksList" class="blocks-list"></div>
+        </div>
+
+      </section>
+
     </section>
+
   </main>
 
   <script src="admin.js"></script>
