@@ -14,7 +14,7 @@ body {
 
 .admin-container {
   width: 100%;
-  max-width: 1050px;
+  max-width: 1180px;
   margin: 0 auto;
 }
 
@@ -56,7 +56,7 @@ input {
   background: #0f0f0f;
   color: #fff;
   border-radius: 12px;
-  padding: 13px;
+  padding: 12px;
   outline: none;
 }
 
@@ -67,7 +67,7 @@ input:focus {
 button {
   border: none;
   border-radius: 12px;
-  padding: 11px 15px;
+  padding: 10px 14px;
   background: #d4af37;
   color: #000;
   font-weight: 800;
@@ -124,7 +124,39 @@ button:disabled {
   color: #fff;
 }
 
-.appointments-list {
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr;
+  gap: 14px;
+}
+
+.card {
+  background: #171717;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.card h2 {
+  color: #d4af37;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.card h3 {
+  color: #fff;
+  font-size: 16px;
+  margin: 16px 0 10px;
+}
+
+.subtitle {
+  color: #999;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.appointments-list,
+.blocks-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -135,38 +167,32 @@ button:disabled {
   grid-template-columns: 1.2fr 1fr 0.8fr 0.7fr 1fr auto;
   gap: 10px;
   align-items: center;
-  background: #171717;
-  border: 1px solid rgba(212, 175, 55, 0.18);
-  border-radius: 15px;
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  border-radius: 14px;
   padding: 12px;
 }
 
-.appointment-card small {
+.appointment-card small,
+.block-card small {
   display: block;
   color: #888;
   font-size: 11px;
   margin-bottom: 3px;
 }
 
-.appointment-card strong {
+.appointment-card strong,
+.block-card strong {
   display: block;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
+  word-break: break-word;
 }
 
 .cancel-btn {
   background: #7a1f1f;
   color: #fff;
   padding: 9px 12px;
-}
-
-.empty {
-  background: #171717;
-  border: 1px solid rgba(212, 175, 55, 0.18);
-  border-radius: 15px;
-  padding: 18px;
-  text-align: center;
-  color: #aaa;
 }
 
 .pagination {
@@ -180,13 +206,74 @@ button:disabled {
 .pagination span {
   color: #d4af37;
   font-weight: 700;
+  font-size: 14px;
 }
 
-@media (max-width: 850px) {
-  .panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+.block-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block-form label {
+  color: #ccc;
+  font-size: 13px;
+}
+
+.block-form input {
+  margin-top: 5px;
+}
+
+.info-box {
+  margin-top: 12px;
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.info-box strong {
+  color: #d4af37;
+  font-size: 13px;
+}
+
+.info-box p {
+  color: #aaa;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.block-card {
+  display: grid;
+  grid-template-columns: 0.9fr 0.8fr 1.3fr auto;
+  gap: 10px;
+  align-items: center;
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.remove-block-btn {
+  background: #7a1f1f;
+  color: #fff;
+  padding: 9px 12px;
+}
+
+.empty {
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  color: #aaa;
+  font-size: 14px;
+}
+
+@media (max-width: 980px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
   }
 
   .appointment-card {
@@ -198,13 +285,15 @@ button:disabled {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   body {
     padding: 12px;
   }
 
-  .appointment-card {
-    grid-template-columns: 1fr;
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .header-actions {
@@ -213,5 +302,15 @@ button:disabled {
 
   .header-actions button {
     flex: 1;
+  }
+
+  .appointment-card,
+  .block-card {
+    grid-template-columns: 1fr;
+  }
+
+  .cancel-btn,
+  .remove-block-btn {
+    width: 100%;
   }
 }
