@@ -9,7 +9,7 @@ body {
   min-height: 100vh;
   background: #0d0d0d;
   color: #fff;
-  padding: 18px;
+  padding: 14px;
 }
 
 .admin-container {
@@ -29,7 +29,6 @@ body {
   border: 1px solid rgba(212, 175, 55, 0.28);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
 }
 
 .login-box h1 {
@@ -74,10 +73,6 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  filter: brightness(1.08);
-}
-
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -101,12 +96,12 @@ button:disabled {
   border: 1px solid rgba(212, 175, 55, 0.22);
   border-radius: 18px;
   padding: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .panel-header h1 {
   color: #d4af37;
-  font-size: 24px;
+  font-size: 23px;
 }
 
 .panel-header p {
@@ -124,6 +119,24 @@ button:disabled {
   color: #fff;
 }
 
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tab {
+  flex: 1;
+  background: #171717;
+  color: #aaa;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.tab.active {
+  background: #d4af37;
+  color: #000;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr;
@@ -134,7 +147,7 @@ button:disabled {
   background: #171717;
   border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 18px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .card h2 {
@@ -159,18 +172,48 @@ button:disabled {
 .blocks-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+}
+
+.day-group {
+  background: #101010;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 13px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.day-header strong {
+  color: #d4af37;
+  font-size: 19px;
+  letter-spacing: 0.5px;
+}
+
+.day-header span {
+  color: #ccc;
+  font-size: 12px;
 }
 
 .appointment-card {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 0.8fr 0.7fr 1fr auto;
+  grid-template-columns: 0.8fr 1fr 1fr 1fr auto;
   gap: 10px;
   align-items: center;
-  background: #101010;
-  border: 1px solid rgba(212, 175, 55, 0.16);
+  background: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   padding: 12px;
+  margin-top: 8px;
 }
 
 .appointment-card small,
@@ -178,7 +221,7 @@ button:disabled {
   display: block;
   color: #888;
   font-size: 11px;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .appointment-card strong,
@@ -189,24 +232,20 @@ button:disabled {
   word-break: break-word;
 }
 
+.time-box strong {
+  color: #d4af37;
+  font-size: 20px;
+}
+
+.service-box strong {
+  color: #fff;
+  font-size: 15px;
+}
+
 .cancel-btn {
   background: #7a1f1f;
   color: #fff;
   padding: 9px 12px;
-}
-
-.pagination {
-  margin-top: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 14px;
-}
-
-.pagination span {
-  color: #d4af37;
-  font-weight: 700;
-  font-size: 14px;
 }
 
 .block-form {
@@ -287,7 +326,7 @@ button:disabled {
 
 @media (max-width: 600px) {
   body {
-    padding: 12px;
+    padding: 10px;
   }
 
   .panel-header {
@@ -304,9 +343,35 @@ button:disabled {
     flex: 1;
   }
 
+  .tabs {
+    flex-direction: column;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .day-header strong {
+    font-size: 22px;
+  }
+
   .appointment-card,
   .block-card {
     grid-template-columns: 1fr;
+  }
+
+  .time-box {
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .time-box strong {
+    font-size: 28px;
+  }
+
+  .service-box strong {
+    font-size: 17px;
   }
 
   .cancel-btn,
