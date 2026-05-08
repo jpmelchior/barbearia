@@ -9,12 +9,13 @@ const adminUser = document.getElementById("adminUser");
 const adminPassword = document.getElementById("adminPassword");
 
 const appointmentsList = document.getElementById("appointmentsList");
+const completedList = document.getElementById("completedList");
+
+const scheduledSection = document.getElementById("scheduledSection");
+const completedSection = document.getElementById("completedSection");
+
 const refreshBtn = document.getElementById("refreshBtn");
 const logoutBtn = document.getElementById("logoutBtn");
-
-const prevPage = document.getElementById("prevPage");
-const nextPage = document.getElementById("nextPage");
-const pageInfo = document.getElementById("pageInfo");
 
 const blockForm = document.getElementById("blockForm");
 const blockDate = document.getElementById("blockDate");
@@ -22,11 +23,11 @@ const blockTime = document.getElementById("blockTime");
 const blockReason = document.getElementById("blockReason");
 const blocksList = document.getElementById("blocksList");
 
+const tabs = document.querySelectorAll(".tab");
+
 let authHeader = localStorage.getItem("adminAuth") || "";
 let appointments = [];
 let blocks = [];
-let currentPage = 1;
-const perPage = 5;
 
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
@@ -52,16 +53,72 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
-function formatDate(date) {
-  if (!date || !date.includes("-")) return date || "-";
+function parseAppointmentDateTime(item) {
+  return new Date(`${item.date}T${item.time || "00:00"}:00`);
+}
 
-  const [year, month, day] = date.split("-");
-  return `${day}/${month}/${year}`;
+function isCompletedAppointment(item) {
+  const appointmentDateTime = parseAppointmentDateTime(item);
+  const completedLimit = new Date(appointmentDateTime.getTime() + 3 * 60 * 60 * 1000);
+
+  return new Date() >= completedLimit;
+}
+
+function formatDayHeader(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  const weekDays = [
+    "DOM",
+    "SEG",
+    "TER",
+    "QUA",
+    "QUI",
+    "SEX",
+    "SÁB"
+  ];
+
+  const weekDay = weekDays[date.getDay()];
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${weekDay} ${day}/${month}`;
+}
+
+function formatSmallDate(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(`${dateString}T00:00:00`);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${day}/${month}`;
 }
 
 function formatTime(time) {
   if (!time) return "Dia inteiro";
   return time.slice(0, 5);
+}
+
+function sortAppointments(list) {
+  return [...list].sort((a, b) => {
+    const dateA = parseAppointmentDateTime(a);
+    const dateB = parseAppointmentDateTime(b);
+
+    return dateA - dateB;
+  });
+}
+
+function groupByDate(list) {
+  return list.reduce((groups, item) => {
+    if (!groups[item.date]) {
+      groups[item.date] = [];
+    }
+
+    groups[item.date].push(item);
+    return groups;
+  }, {});
 }
 
 async function adminFetch(url, options = {}) {
@@ -103,7 +160,8 @@ async function loadAll() {
 }
 
 async function loadAppointments() {
-  appointmentsList.innerHTML = `<p class="empty">Carregando agendamentos...</p>`;
+  appointmentsList.innerHTML = `<p class="empty">Carregando horários...</p>`;
+  completedList.innerHTML = `<p class="empty">Carregando histórico...</p>`;
 
   try {
     const response = await adminFetch(`${API_URL}/admin/appointments`);
@@ -119,68 +177,91 @@ async function loadAppointments() {
     const data = await response.json();
 
     if (!response.ok) {
-      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar agendamentos."}</p>`;
+      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar horários."}</p>`;
+      completedList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar histórico."}</p>`;
       return;
     }
 
     appointments = Array.isArray(data) ? data : [];
-    currentPage = 1;
     renderAppointments();
   } catch (error) {
     appointmentsList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
+    completedList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
   }
 }
 
 function renderAppointments() {
-  appointmentsList.innerHTML = "";
+  const activeAppointments = sortAppointments(
+    appointments.filter((item) => !isCompletedAppointment(item))
+  );
 
-  if (!appointments.length) {
-    appointmentsList.innerHTML = `<p class="empty">Nenhum agendamento marcado.</p>`;
-    pageInfo.textContent = "Página 1";
-    prevPage.disabled = true;
-    nextPage.disabled = true;
+  const completedAppointments = sortAppointments(
+    appointments.filter((item) => isCompletedAppointment(item))
+  ).reverse();
+
+  renderGroupedAppointments(appointmentsList, activeAppointments, "Nenhum horário futuro marcado.");
+  renderGroupedAppointments(completedList, completedAppointments, "Nenhum atendimento finalizado ainda.");
+}
+
+function renderGroupedAppointments(container, list, emptyMessage) {
+  container.innerHTML = "";
+
+  if (!list.length) {
+    container.innerHTML = `<p class="empty">${emptyMessage}</p>`;
     return;
   }
 
-  const totalPages = Math.ceil(appointments.length / perPage);
-  const start = (currentPage - 1) * perPage;
-  const pageItems = appointments.slice(start, start + perPage);
+  const grouped = groupByDate(list);
 
-  pageItems.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "appointment-card";
+  Object.keys(grouped)
+    .sort()
+    .forEach((date) => {
+      const daySection = document.createElement("section");
+      daySection.className = "day-group";
 
-    card.innerHTML = `
-      <div>
-        <small>Nome</small>
-        <strong>${escapeHTML(item.name)}</strong>
-      </div>
+      const dayHeader = document.createElement("div");
+      dayHeader.className = "day-header";
 
-      <div>
-        <small>Número</small>
-        <strong>${escapeHTML(item.phone)}</strong>
-      </div>
+      dayHeader.innerHTML = `
+        <strong>${formatDayHeader(date)}</strong>
+        <span>${grouped[date].length} horário(s)</span>
+      `;
 
-      <div>
-        <small>Dia</small>
-        <strong>${formatDate(item.date)}</strong>
-      </div>
+      daySection.appendChild(dayHeader);
 
-      <div>
-        <small>Hora</small>
-        <strong>${escapeHTML(formatTime(item.time))}</strong>
-      </div>
+      grouped[date].forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "appointment-card";
 
-      <div>
-        <small>Serviço</small>
-        <strong>${escapeHTML(item.service)}</strong>
-      </div>
+        card.innerHTML = `
+          <div class="time-box">
+            <small>Horário</small>
+            <strong>${escapeHTML(formatTime(item.time))}</strong>
+          </div>
 
-      <button class="cancel-btn" data-id="${item.id}">Cancelar</button>
-    `;
+          <div class="service-box">
+            <small>Serviço</small>
+            <strong>${escapeHTML(item.service)}</strong>
+          </div>
 
-    appointmentsList.appendChild(card);
-  });
+          <div>
+            <small>Cliente</small>
+            <strong>${escapeHTML(item.name)}</strong>
+          </div>
+
+          <div>
+            <small>Número</small>
+            <strong>${escapeHTML(item.phone)}</strong>
+          </div>
+
+          <button class="cancel-btn" data-id="${item.id}">Cancelar</button>
+        `;
+
+        daySection.appendChild(card);
+      });
+
+      container.appendChild(daySection);
+    });
 
   document.querySelectorAll(".cancel-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -191,10 +272,6 @@ function renderAppointments() {
       await cancelAppointment(id);
     });
   });
-
-  pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-  prevPage.disabled = currentPage === 1;
-  nextPage.disabled = currentPage === totalPages;
 }
 
 async function cancelAppointment(id) {
@@ -250,31 +327,37 @@ function renderBlocks() {
     return;
   }
 
-  blocks.forEach((block) => {
-    const card = document.createElement("article");
-    card.className = "block-card";
+  blocks
+    .sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || "00:00"}:00`);
+      const dateB = new Date(`${b.date}T${b.time || "00:00"}:00`);
+      return dateA - dateB;
+    })
+    .forEach((block) => {
+      const card = document.createElement("article");
+      card.className = "block-card";
 
-    card.innerHTML = `
-      <div>
-        <small>Dia</small>
-        <strong>${formatDate(block.date)}</strong>
-      </div>
+      card.innerHTML = `
+        <div>
+          <small>Dia</small>
+          <strong>${formatDayHeader(block.date)}</strong>
+        </div>
 
-      <div>
-        <small>Horário</small>
-        <strong>${formatTime(block.time)}</strong>
-      </div>
+        <div>
+          <small>Horário</small>
+          <strong>${formatTime(block.time)}</strong>
+        </div>
 
-      <div>
-        <small>Motivo</small>
-        <strong>${escapeHTML(block.reason)}</strong>
-      </div>
+        <div>
+          <small>Motivo</small>
+          <strong>${escapeHTML(block.reason)}</strong>
+        </div>
 
-      <button class="remove-block-btn" data-id="${block.id}">Remover</button>
-    `;
+        <button class="remove-block-btn" data-id="${block.id}">Remover</button>
+      `;
 
-    blocksList.appendChild(card);
-  });
+      blocksList.appendChild(card);
+    });
 
   document.querySelectorAll(".remove-block-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -341,6 +424,25 @@ async function removeBlock(id) {
   }
 }
 
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach((item) => item.classList.remove("active"));
+    tab.classList.add("active");
+
+    const selectedTab = tab.dataset.tab;
+
+    if (selectedTab === "scheduled") {
+      scheduledSection.classList.remove("hidden");
+      completedSection.classList.add("hidden");
+    }
+
+    if (selectedTab === "completed") {
+      completedSection.classList.remove("hidden");
+      scheduledSection.classList.add("hidden");
+    }
+  });
+});
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -362,22 +464,6 @@ logoutBtn.addEventListener("click", () => {
   localStorage.removeItem("adminAuth");
   authHeader = "";
   showLogin();
-});
-
-prevPage.addEventListener("click", () => {
-  if (currentPage > 1) {
-    currentPage--;
-    renderAppointments();
-  }
-});
-
-nextPage.addEventListener("click", () => {
-  const totalPages = Math.ceil(appointments.length / perPage);
-
-  if (currentPage < totalPages) {
-    currentPage++;
-    renderAppointments();
-  }
 });
 
 blockForm.addEventListener("submit", createBlock);
