@@ -2,97 +2,159 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+:root {
+  --bg: #070707;
+  --card: rgba(18, 18, 18, 0.92);
+  --card2: rgba(255, 255, 255, 0.055);
+  --gold: #d4af37;
+  --gold2: #f5d76e;
+  --text: #ffffff;
+  --muted: #b9b9b9;
+  --danger: #dc2626;
+  --success: #22c55e;
+  --border: rgba(212, 175, 55, 0.22);
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(245, 197, 66, 0.18), transparent 35%),
-    linear-gradient(135deg, #050505, #111111 45%, #050505);
-  color: #fff;
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.28), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(212, 175, 55, 0.12), transparent 30%),
+    linear-gradient(135deg, #030303, #101010 45%, #050505);
+  color: var(--text);
   padding: 24px;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  pointer-events: none;
 }
 
 .container {
   width: 100%;
-  max-width: 1150px;
+  max-width: 1120px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .card {
-  background: rgba(20, 20, 20, 0.96);
-  border: 1px solid rgba(245, 197, 66, 0.22);
-  border-radius: 24px;
-  padding: 34px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 38px;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.card::before {
+  content: "BARBEARIA PREMIUM";
+  display: inline-block;
+  color: #000;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 18px;
 }
 
 h1 {
-  color: #f5c542;
-  font-size: 2.4rem;
-  margin-bottom: 10px;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.02;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -1.5px;
+}
+
+h1::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  border-radius: 999px;
+  margin-top: 18px;
 }
 
 h2 {
-  color: #f5c542;
-  margin: 32px 0 16px;
+  color: var(--gold2);
+  margin: 34px 0 16px;
   font-size: 1.45rem;
 }
 
 p {
-  color: #d6d6d6;
-  line-height: 1.6;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 1rem;
 }
 
 form {
-  margin-top: 25px;
+  margin-top: 28px;
+  display: grid;
+  gap: 2px;
 }
 
 label {
   display: block;
   margin-top: 18px;
   margin-bottom: 8px;
-  color: #f5c542;
-  font-weight: 700;
+  color: var(--gold2);
+  font-weight: 800;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  padding: 15px;
-  border-radius: 14px;
-  border: 1px solid rgba(245, 197, 66, 0.22);
-  background: #111;
+  padding: 16px 17px;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background: rgba(0, 0, 0, 0.42);
   color: #fff;
   font-size: 1rem;
   outline: none;
+  transition: 0.2s ease;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #f5c542;
-  box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.12);
+  border-color: var(--gold2);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.13);
+  background: rgba(0, 0, 0, 0.62);
 }
 
-input::placeholder {
-  color: #888;
+input::placeholder,
+textarea::placeholder {
+  color: #777;
 }
 
 button {
   width: 100%;
-  margin-top: 20px;
-  padding: 15px;
+  margin-top: 18px;
+  padding: 16px 18px;
   border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #f5c542, #ffd86b);
-  color: #000;
-  font-weight: 800;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: #050505;
+  font-weight: 950;
   font-size: 1rem;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.22s ease;
+  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.22);
 }
 
 button:hover {
@@ -100,52 +162,79 @@ button:hover {
   filter: brightness(1.08);
 }
 
+button:active {
+  transform: scale(0.98);
+}
+
 #message,
 #loginMessage {
   margin-top: 18px;
-  font-weight: 700;
+  font-weight: 800;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.055);
 }
 
 .day-buttons,
-.time-buttons {
+.time-buttons,
+#daysContainer,
+#timesContainer {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   gap: 12px;
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
 .day-button,
-.time-button {
-  background: #171717;
-  border: 1px solid rgba(245, 197, 66, 0.25);
+.time-button,
+.day-btn,
+.time-btn {
+  background: rgba(255,255,255,0.065);
+  border: 1px solid rgba(212,175,55,0.24);
   color: #fff;
+  box-shadow: none;
+}
+
+.day-button:hover,
+.time-button:hover,
+.day-btn:hover,
+.time-btn:hover {
+  background: rgba(212, 175, 55, 0.15);
 }
 
 .day-button.active,
-.time-button.active {
-  background: #f5c542;
-  color: #000;
+.time-button.active,
+.day-btn.active,
+.time-btn.active,
+.selected {
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: #050505;
 }
 
 .day-button:disabled,
-.time-button:disabled {
+.time-button:disabled,
+.day-btn:disabled,
+.time-btn:disabled,
+button.disabled {
   opacity: 0.35;
   cursor: not-allowed;
   background: #333;
-  color: #999;
+  color: #aaa;
+  transform: none;
+  box-shadow: none;
 }
 
 .admin-item {
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(245, 197, 66, 0.18);
-  border-radius: 18px;
+  background: var(--card2);
+  border: 1px solid rgba(212,175,55,0.18);
+  border-radius: 20px;
   padding: 18px;
   margin: 14px 0;
 }
 
 .admin-item strong {
   display: block;
-  color: #f5c542;
+  color: var(--gold2);
   margin-bottom: 10px;
 }
 
@@ -154,21 +243,18 @@ button:hover {
 }
 
 .admin-item button {
-  background: #b91c1c;
+  background: linear-gradient(135deg, #991b1b, var(--danger));
   color: #fff;
-}
-
-.admin-item button:hover {
-  background: #dc2626;
+  box-shadow: 0 12px 32px rgba(220, 38, 38, 0.18);
 }
 
 #appointmentsList,
 #blocksList {
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
 .success {
-  color: #4dff88;
+  color: var(--success);
 }
 
 .error {
@@ -176,7 +262,32 @@ button:hover {
 }
 
 .warning {
-  color: #ffcc00;
+  color: #facc15;
+}
+
+a {
+  color: var(--gold2);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+@media (min-width: 900px) {
+  .card {
+    margin-top: 26px;
+  }
+
+  form {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 18px;
+  }
+
+  form button,
+  #message {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 768px) {
@@ -185,28 +296,34 @@ button:hover {
   }
 
   .card {
-    padding: 22px;
-    border-radius: 18px;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .card::before {
+    font-size: 0.65rem;
   }
 
   h1 {
-    font-size: 1.8rem;
+    font-size: 2.1rem;
   }
 
   h2 {
-    font-size: 1.25rem;
+    font-size: 1.22rem;
   }
 
   .day-buttons,
-  .time-buttons {
+  .time-buttons,
+  #daysContainer,
+  #timesContainer {
     grid-template-columns: repeat(2, 1fr);
   }
 
   input,
   select,
-  button,
-  textarea {
-    padding: 13px;
+  textarea,
+  button {
+    padding: 14px;
     font-size: 0.95rem;
   }
 }
