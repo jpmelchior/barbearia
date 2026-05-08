@@ -1,56 +1,109 @@
 const API_URL = "https://barbearia-ygxt.onrender.com/api";
 
-const dateInput = document.getElementById("date");
-const timeSelect = document.getElementById("time");
 const form = document.getElementById("appointmentForm");
+const daysContainer = document.getElementById("daysContainer");
+const timesContainer = document.getElementById("timesContainer");
 const message = document.getElementById("message");
 
-const today = new Date().toISOString().split("T")[0];
-dateInput.min = today;
+const dateInput = document.getElementById("date");
+const timeInput = document.getElementById("time");
 
-timeSelect.innerHTML = `<option value="">Escolha uma data primeiro</option>`;
+let selectedDate = "";
+let selectedTime = "";
 
-dateInput.addEventListener("change", async () => {
-  const selectedDate = dateInput.value;
+function formatDateBR(dateString) {
+  const [year, month, day] = dateString.split("-");
+  return `${day}/${month}`;
+}
 
-  timeSelect.innerHTML = `<option value="">Carregando horários...</option>`;
+function getWeekdayName(dateString) {
+  const date = new Date(`${dateString}T12:00:00`);
+  return date.toLocaleDateString("pt-BR", { weekday: "long" });
+}
+
+function generateDays(quantity = 30) {
+  daysContainer.innerHTML = "";
+
+  const today = new Date();
+  let added = 0;
+  let index = 0;
+
+  while (added < quantity) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+
+    const day = date.getDay();
+
+    if (day !== 0 && day !== 6) {
+      const dateString = date.toISOString().split("T")[0];
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${getWeekdayName(dateString)} ${formatDateBR(dateString)}`;
+      button.dataset.date = dateString;
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll("#daysContainer button").forEach(btn => {
+          btn.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        selectedDate = dateString;
+        selectedTime = "";
+
+        dateInput.value = selectedDate;
+        timeInput.value = "";
+
+        loadTimes(selectedDate);
+      });
+
+      daysContainer.appendChild(button);
+      added++;
+    }
+
+    index++;
+  }
+}
+
+async function loadTimes(date) {
+  timesContainer.innerHTML = "<p>Carregando horários...</p>";
   message.textContent = "";
 
-  if (!selectedDate) {
-    timeSelect.innerHTML = `<option value="">Escolha uma data primeiro</option>`;
-    return;
-  }
-
   try {
-    const response = await fetch(`${API_URL}/times?date=${selectedDate}`);
+    const response = await fetch(`${API_URL}/times?date=${date}`);
     const data = await response.json();
 
-    timeSelect.innerHTML = "";
+    timesContainer.innerHTML = "";
 
     if (!data.available || data.available.length === 0) {
-      timeSelect.innerHTML = `<option value="">Nenhum horário disponível</option>`;
-      message.style.color = "#ffcc00";
-      message.textContent = data.message || "Nenhum horário disponível para esta data.";
+      timesContainer.innerHTML = "<p>Nenhum horário disponível para este dia.</p>";
       return;
     }
 
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Selecione um horário";
-    timeSelect.appendChild(defaultOption);
+    data.available.forEach(time => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = time;
+      button.dataset.time = time;
 
-    data.available.forEach((time) => {
-      const option = document.createElement("option");
-      option.value = time;
-      option.textContent = time;
-      timeSelect.appendChild(option);
+      button.addEventListener("click", () => {
+        document.querySelectorAll("#timesContainer button").forEach(btn => {
+          btn.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        selectedTime = time;
+        timeInput.value = selectedTime;
+      });
+
+      timesContainer.appendChild(button);
     });
   } catch (error) {
-    timeSelect.innerHTML = `<option value="">Erro ao buscar horários</option>`;
-    message.style.color = "#ff5c5c";
-    message.textContent = "Erro ao conectar com o servidor.";
+    timesContainer.innerHTML = "<p>Erro ao carregar horários.</p>";
   }
-});
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -59,49 +112,48 @@ form.addEventListener("submit", async (event) => {
     name: document.getElementById("name").value.trim(),
     phone: document.getElementById("phone").value.trim(),
     service: document.getElementById("service").value,
-    date: document.getElementById("date").value,
-    time: document.getElementById("time").value,
+    date: dateInput.value,
+    time: timeInput.value,
   };
 
-  if (
-    !appointment.name ||
-    !appointment.phone ||
-    !appointment.service ||
-    !appointment.date ||
-    !appointment.time
-  ) {
-    message.style.color = "#ff5c5c";
-    message.textContent = "Preencha todos os campos antes de agendar.";
+  if (!appointment.name || !appointment.phone || !appointment.service || !appointment.date || !appointment.time) {
+    message.textContent = "Preencha todos os campos e escolha dia e horário.";
     return;
   }
 
-  message.style.color = "#ffffff";
   message.textContent = "Confirmando agendamento...";
 
   try {
     const response = await fetch(`${API_URL}/appointments`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(appointment),
+      body: JSON.stringify(appointment)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      message.style.color = "#ff5c5c";
       message.textContent = data.error || "Erro ao agendar.";
       return;
     }
 
-    message.style.color = "#4dff88";
     message.textContent = "Agendamento confirmado com sucesso!";
 
     form.reset();
-    timeSelect.innerHTML = `<option value="">Escolha uma data primeiro</option>`;
+    selectedDate = "";
+    selectedTime = "";
+    dateInput.value = "";
+    timeInput.value = "";
+
+    document.querySelectorAll("#daysContainer button").forEach(btn => btn.classList.remove("active"));
+    timesContainer.innerHTML = "";
+
+    generateDays();
   } catch (error) {
-    message.style.color = "#ff5c5c";
-    message.textContent = "Erro de conexão com o servidor.";
+    message.textContent = "Erro ao conectar com o servidor.";
   }
 });
+
+generateDays();
