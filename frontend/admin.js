@@ -1,362 +1,240 @@
-// frontend/admin.js
-
 const API_URL = "https://barbearia-ygxt.onrender.com/api";
 
-const loginSection = document.getElementById("loginSection");
-const dashboardSection = document.getElementById("dashboardSection");
-
+const loginBox = document.getElementById("loginBox");
+const adminPanel = document.getElementById("adminPanel");
 const loginForm = document.getElementById("loginForm");
-const logoutBtn = document.getElementById("logoutBtn");
-
 const loginMessage = document.getElementById("loginMessage");
 
+const adminUser = document.getElementById("adminUser");
+const adminPassword = document.getElementById("adminPassword");
+
 const appointmentsList = document.getElementById("appointmentsList");
-const blocksList = document.getElementById("blocksList");
+const refreshBtn = document.getElementById("refreshBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-const appointmentsCount = document.getElementById("appointmentsCount");
-const blocksCount = document.getElementById("blocksCount");
+const prevPage = document.getElementById("prevPage");
+const nextPage = document.getElementById("nextPage");
+const pageInfo = document.getElementById("pageInfo");
 
-const blockForm = document.getElementById("blockForm");
-
-function getAuth() {
-  const user = sessionStorage.getItem("admin_user");
-  const password = sessionStorage.getItem("admin_password");
-
-  if (!user || !password) return null;
-
-  return "Basic " + btoa(`${user}:${password}`);
-}
-
-function clearAuth() {
-  sessionStorage.removeItem("admin_user");
-  sessionStorage.removeItem("admin_password");
-  localStorage.removeItem("admin_user");
-  localStorage.removeItem("admin_password");
-}
-
-function showDashboard() {
-  loginSection.style.display = "none";
-  dashboardSection.style.display = "block";
-  logoutBtn.style.display = "inline-flex";
-}
-
-function showLogin() {
-  loginSection.style.display = "block";
-  dashboardSection.style.display = "none";
-  logoutBtn.style.display = "none";
-}
+let authHeader = localStorage.getItem("adminAuth") || "";
+let appointments = [];
+let currentPage = 1;
+const perPage = 5;
 
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
-  loginMessage.className = type;
+  loginMessage.className = `message ${type}`;
 }
 
-function setListMessage(container, text) {
-  container.innerHTML = "";
-
-  const paragraph = document.createElement("p");
-  paragraph.className = "empty-text";
-  paragraph.textContent = text;
-
-  container.appendChild(paragraph);
+function showPanel() {
+  loginBox.classList.add("hidden");
+  adminPanel.classList.remove("hidden");
 }
 
-function handleUnauthorized(response) {
-  if (response.status !== 401 && response.status !== 403) {
-    return false;
-  }
-
-  clearAuth();
-  showLogin();
-  setLoginMessage("Sessão expirada. Entre novamente.", "error");
-  return true;
+function showLogin() {
+  adminPanel.classList.add("hidden");
+  loginBox.classList.remove("hidden");
 }
 
-function createInfoLine(label, value) {
-  const paragraph = document.createElement("p");
-  const strong = document.createElement("b");
+function formatDate(date) {
+  if (!date || !date.includes("-")) return date || "-";
 
-  strong.textContent = `${label}: `;
-  paragraph.appendChild(strong);
-  paragraph.append(document.createTextNode(value || "-"));
-
-  return paragraph;
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
 }
 
-async function login() {
-  const user = document.getElementById("adminUser").value.trim();
-  const password = document.getElementById("adminPassword").value.trim();
+function escapeHTML(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  if (!user || !password) {
-    setLoginMessage("Preencha usuário e senha.", "error");
-    return;
-  }
-
-  const auth = "Basic " + btoa(`${user}:${password}`);
-  const loginButton = loginForm.querySelector(".submit-btn");
-
-  setLoginMessage("Entrando...");
-  loginButton.disabled = true;
-
-  try {
-    const response = await fetch(`${API_URL}/admin/login`, {
-      method: "POST",
-      headers: {
-        Authorization: auth
-      }
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      setLoginMessage(data.error || "Erro no login.", "error");
-      return;
+async function adminFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: authHeader
     }
+  });
+}
 
-    sessionStorage.setItem("admin_user", user);
-    sessionStorage.setItem("admin_password", password);
+async function login(user, password) {
+  const token = btoa(`${user}:${password}`);
+  authHeader = `Basic ${token}`;
 
-    setLoginMessage("");
-    showDashboard();
+  const response = await fetch(`${API_URL}/admin/login`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader
+    }
+  });
 
-    loadAppointments();
-    loadBlocks();
-  } catch (error) {
-    setLoginMessage("Erro ao conectar.", "error");
-  } finally {
-    loginButton.disabled = false;
+  if (!response.ok) {
+    authHeader = "";
+    localStorage.removeItem("adminAuth");
+    throw new Error("Usuário ou senha incorretos.");
   }
+
+  localStorage.setItem("adminAuth", authHeader);
 }
 
 async function loadAppointments() {
-  setListMessage(appointmentsList, "Carregando...");
+  appointmentsList.innerHTML = `<p class="empty">Carregando agendamentos...</p>`;
 
   try {
-    const response = await fetch(`${API_URL}/admin/appointments`, {
-      headers: {
-        Authorization: getAuth()
-      }
-    });
+    const response = await adminFetch(`${API_URL}/admin/appointments`);
 
-    if (handleUnauthorized(response)) return;
-
-    if (!response.ok) {
-      throw new Error("Erro ao carregar agendamentos.");
-    }
-
-    const parsedData = await response.json();
-    const data = Array.isArray(parsedData) ? parsedData : [];
-
-    appointmentsList.innerHTML = "";
-    appointmentsCount.textContent = data.length;
-
-    if (!data.length) {
-      setListMessage(appointmentsList, "Nenhum agendamento encontrado.");
+    if (response.status === 401) {
+      localStorage.removeItem("adminAuth");
+      authHeader = "";
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
       return;
     }
 
-    data.forEach((appointment) => {
-      const item = document.createElement("article");
-      item.className = "admin-card";
-
-      const top = document.createElement("div");
-      top.className = "admin-card-top";
-
-      const service = document.createElement("strong");
-      service.textContent = appointment.service || "Serviço";
-
-      const date = document.createElement("span");
-      date.textContent = appointment.date || "-";
-
-      const content = document.createElement("div");
-      content.className = "admin-card-content";
-      content.appendChild(createInfoLine("Cliente", appointment.name));
-      content.appendChild(createInfoLine("WhatsApp", appointment.phone));
-      content.appendChild(createInfoLine("Horário", appointment.time));
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "danger-btn";
-      button.textContent = "Cancelar horário";
-
-      button.addEventListener("click", async () => {
-        if (!confirm("Cancelar esse agendamento?")) return;
-
-        button.disabled = true;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/appointments/${appointment.id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: getAuth()
-            }
-          });
-
-          if (handleUnauthorized(response)) return;
-
-          loadAppointments();
-        } finally {
-          button.disabled = false;
-        }
-      });
-
-      top.appendChild(service);
-      top.appendChild(date);
-
-      item.appendChild(top);
-      item.appendChild(content);
-      item.appendChild(button);
-
-      appointmentsList.appendChild(item);
-    });
-  } catch (error) {
-    setListMessage(appointmentsList, "Erro ao carregar agendamentos.");
-  }
-}
-
-async function loadBlocks() {
-  setListMessage(blocksList, "Carregando...");
-
-  try {
-    const response = await fetch(`${API_URL}/admin/blocks`, {
-      headers: {
-        Authorization: getAuth()
-      }
-    });
-
-    if (handleUnauthorized(response)) return;
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error("Erro ao carregar bloqueios.");
-    }
-
-    const parsedData = await response.json();
-    const data = Array.isArray(parsedData) ? parsedData : [];
-
-    blocksList.innerHTML = "";
-    blocksCount.textContent = data.length;
-
-    if (!data.length) {
-      setListMessage(blocksList, "Nenhum bloqueio encontrado.");
+      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar."}</p>`;
       return;
     }
 
-    data.forEach((block) => {
-      const item = document.createElement("article");
-      item.className = "admin-card";
-
-      const top = document.createElement("div");
-      top.className = "admin-card-top";
-
-      const date = document.createElement("strong");
-      date.textContent = block.date || "-";
-
-      const time = document.createElement("span");
-      time.textContent = block.time || "Dia inteiro";
-
-      const content = document.createElement("div");
-      content.className = "admin-card-content";
-      content.appendChild(createInfoLine("Motivo", block.reason));
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "danger-btn";
-      button.textContent = "Remover bloqueio";
-
-      button.addEventListener("click", async () => {
-        if (!confirm("Remover bloqueio?")) return;
-
-        button.disabled = true;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/blocks/${block.id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: getAuth()
-            }
-          });
-
-          if (handleUnauthorized(response)) return;
-
-          loadBlocks();
-        } finally {
-          button.disabled = false;
-        }
-      });
-
-      top.appendChild(date);
-      top.appendChild(time);
-
-      item.appendChild(top);
-      item.appendChild(content);
-      item.appendChild(button);
-
-      blocksList.appendChild(item);
-    });
+    appointments = Array.isArray(data) ? data : [];
+    currentPage = 1;
+    renderAppointments();
   } catch (error) {
-    setListMessage(blocksList, "Erro ao carregar bloqueios.");
+    appointmentsList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
   }
 }
 
-blockForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+function renderAppointments() {
+  appointmentsList.innerHTML = "";
 
-  const date = document.getElementById("blockDate").value;
-  const time = document.getElementById("blockTime").value;
-  const reason = document.getElementById("blockReason").value.trim();
-  const submitButton = blockForm.querySelector(".submit-btn");
-
-  if (!date || !reason) {
-    alert("Preencha os campos.");
+  if (!appointments.length) {
+    appointmentsList.innerHTML = `<p class="empty">Nenhum agendamento marcado.</p>`;
+    pageInfo.textContent = "Página 1";
+    prevPage.disabled = true;
+    nextPage.disabled = true;
     return;
   }
 
-  submitButton.disabled = true;
+  const totalPages = Math.ceil(appointments.length / perPage);
+  const start = (currentPage - 1) * perPage;
+  const pageItems = appointments.slice(start, start + perPage);
 
+  pageItems.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "appointment-card";
+
+    card.innerHTML = `
+      <div>
+        <small>Nome</small>
+        <strong>${escapeHTML(item.name)}</strong>
+      </div>
+
+      <div>
+        <small>Número</small>
+        <strong>${escapeHTML(item.phone)}</strong>
+      </div>
+
+      <div>
+        <small>Dia</small>
+        <strong>${formatDate(item.date)}</strong>
+      </div>
+
+      <div>
+        <small>Horário</small>
+        <strong>${escapeHTML(item.time)}</strong>
+      </div>
+
+      <div>
+        <small>Serviço</small>
+        <strong>${escapeHTML(item.service)}</strong>
+      </div>
+
+      <button class="cancel-btn" data-id="${item.id}">Cancelar</button>
+    `;
+
+    appointmentsList.appendChild(card);
+  });
+
+  document.querySelectorAll(".cancel-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.id;
+
+      const confirmDelete = confirm("Deseja cancelar este agendamento?");
+      if (!confirmDelete) return;
+
+      await cancelAppointment(id);
+    });
+  });
+
+  pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+  prevPage.disabled = currentPage === 1;
+  nextPage.disabled = currentPage === totalPages;
+}
+
+async function cancelAppointment(id) {
   try {
-    const response = await fetch(`${API_URL}/admin/blocks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: getAuth()
-      },
-      body: JSON.stringify({
-        date,
-        time,
-        reason
-      })
+    const response = await adminFetch(`${API_URL}/admin/appointments/${id}`, {
+      method: "DELETE"
     });
 
-    if (handleUnauthorized(response)) return;
-
     if (!response.ok) {
-      alert("Erro ao criar bloqueio.");
+      alert("Erro ao cancelar agendamento.");
       return;
     }
 
-    blockForm.reset();
-    loadBlocks();
+    await loadAppointments();
   } catch (error) {
-    alert("Erro ao conectar.");
-  } finally {
-    submitButton.disabled = false;
+    alert("Erro ao conectar ao servidor.");
+  }
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  setLoginMessage("Entrando...");
+
+  try {
+    await login(adminUser.value.trim(), adminPassword.value.trim());
+    setLoginMessage("");
+    showPanel();
+    await loadAppointments();
+  } catch (error) {
+    setLoginMessage(error.message, "error");
   }
 });
 
+refreshBtn.addEventListener("click", loadAppointments);
+
 logoutBtn.addEventListener("click", () => {
-  clearAuth();
+  localStorage.removeItem("adminAuth");
+  authHeader = "";
   showLogin();
 });
 
-loginForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  login();
+prevPage.addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderAppointments();
+  }
 });
 
-if (getAuth()) {
-  showDashboard();
+nextPage.addEventListener("click", () => {
+  const totalPages = Math.ceil(appointments.length / perPage);
+
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderAppointments();
+  }
+});
+
+if (authHeader) {
+  showPanel();
   loadAppointments();
-  loadBlocks();
-} else {
-  showLogin();
 }
