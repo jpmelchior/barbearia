@@ -1,0 +1,185 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  background: #0f0f0f;
+  color: #ffffff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+}
+
+.container {
+  width: 100%;
+  max-width: 700px;
+}
+
+.card {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.4);
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #f5c542;
+}
+
+h2 {
+  margin-top: 35px;
+  margin-bottom: 15px;
+  color: #f5c542;
+  font-size: 1.3rem;
+}
+
+p {
+  color: #cccccc;
+  margin-bottom: 10px;
+}
+
+form {
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  color: #f0f0f0;
+  font-weight: bold;
+}
+
+input,
+select,
+button,
+textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+input,
+select,
+textarea {
+  background: #2a2a2a;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #999999;
+}
+
+button {
+  margin-top: 20px;
+  background: #f5c542;
+  color: #000000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.02);
+  background: #ffd95e;
+}
+
+#message,
+#loginMessage {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+.admin-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 18px;
+  margin-top: 15px;
+}
+
+.admin-item strong {
+  display: block;
+  color: #f5c542;
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+}
+
+.admin-item p {
+  margin: 6px 0;
+  color: #dddddd;
+}
+
+.admin-item button {
+  background: #b91c1c;
+  color: #ffffff;
+  margin-top: 12px;
+}
+
+.admin-item button:hover {
+  background: #dc2626;
+}
+
+#appointmentsList,
+#blocksList {
+  margin-top: 15px;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 25px 0;
+}
+
+.success {
+  color: #4dff88;
+}
+
+.error {
+  color: #ff5c5c;
+}
+
+.warning {
+  color: #ffcc00;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 15px;
+    align-items: flex-start;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 1.7rem;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+  }
+
+  input,
+  select,
+  button,
+  textarea {
+    font-size: 0.95rem;
+    padding: 13px;
+  }
+}

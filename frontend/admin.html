@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Admin - Barbearia</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Painel Admin</h1>
+      <p>Área exclusiva do barbeiro.</p>
+
+      <div id="loginArea">
+        <input type="text" id="adminUser" placeholder="Usuário" />
+        <input type="password" id="adminPassword" placeholder="Senha" />
+        <button onclick="loginAdmin()">Entrar</button>
+        <p id="loginMessage"></p>
+      </div>
+
+      <div id="adminArea" style="display: none;">
+        <button onclick="logoutAdmin()">Sair</button>
+
+        <h2>Agendamentos</h2>
+        <div id="appointmentsList"></div>
+
+        <h2>Bloquear data ou horário</h2>
+
+        <label>Data</label>
+        <input type="date" id="blockDate" />
+
+        <label>Horário</label>
+        <select id="blockTime">
+          <option value="">Bloquear o dia inteiro</option>
+          <option value="08:00">08:00</option>
+          <option value="09:00">09:00</option>
+          <option value="10:00">10:00</option>
+          <option value="11:00">11:00</option>
+          <option value="12:00">12:00</option>
+          <option value="13:00">13:00</option>
+          <option value="14:00">14:00</option>
+          <option value="15:00">15:00</option>
+          <option value="16:00">16:00</option>
+          <option value="17:00">17:00</option>
+          <option value="18:00">18:00</option>
+          <option value="19:00">19:00</option>
+        </select>
+
+        <label>Motivo</label>
+        <input type="text" id="blockReason" placeholder="Ex: Viagem, imprevisto, folga..." />
+
+        <button onclick="createBlock()">Bloquear</button>
+
+        <h2>Bloqueios ativos</h2>
+        <div id="blocksList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
