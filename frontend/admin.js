@@ -1,362 +1,224 @@
-// frontend/admin.js
 
-const API_URL = "https://barbearia-ygxt.onrender.com/api";
-
-const loginSection = document.getElementById("loginSection");
-const dashboardSection = document.getElementById("dashboardSection");
-
-const loginForm = document.getElementById("loginForm");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const loginMessage = document.getElementById("loginMessage");
-
-const appointmentsList = document.getElementById("appointmentsList");
-const blocksList = document.getElementById("blocksList");
 
 const appointmentsCount = document.getElementById("appointmentsCount");
 const blocksCount = document.getElementById("blocksCount");
+const appointmentsDayLabel = document.getElementById("appointmentsDayLabel");
+const appointmentsDateLabel = document.getElementById("appointmentsDateLabel");
+const prevAppointmentsDay = document.getElementById("prevAppointmentsDay");
+const nextAppointmentsDay = document.getElementById("nextAppointmentsDay");
 
 const blockForm = document.getElementById("blockForm");
+
+let selectedAppointmentsDate = getInitialAppointmentsDate();
 
 function getAuth() {
   const user = sessionStorage.getItem("admin_user");
   const password = sessionStorage.getItem("admin_password");
-
-  if (!user || !password) return null;
-
-  return "Basic " + btoa(`${user}:${password}`);
-}
-
-function clearAuth() {
-  sessionStorage.removeItem("admin_user");
-  sessionStorage.removeItem("admin_password");
-  localStorage.removeItem("admin_user");
-  localStorage.removeItem("admin_password");
-}
-
-function showDashboard() {
-  loginSection.style.display = "none";
-  dashboardSection.style.display = "block";
-  logoutBtn.style.display = "inline-flex";
-}
-
-function showLogin() {
-  loginSection.style.display = "block";
-  dashboardSection.style.display = "none";
-  logoutBtn.style.display = "none";
-}
-
-function setLoginMessage(text, type = "") {
-  loginMessage.textContent = text;
-  loginMessage.className = type;
-}
-
-function setListMessage(container, text) {
-  container.innerHTML = "";
-
-  const paragraph = document.createElement("p");
-  paragraph.className = "empty-text";
-  paragraph.textContent = text;
-
   container.appendChild(paragraph);
+}
+
+function getTodayBrazilDate() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function parseDateString(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+function formatDateString(date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isBusinessDay(dateString) {
+  const day = parseDateString(dateString).getUTCDay();
+  return day !== 0 && day !== 6;
+}
+
+function getInitialAppointmentsDate() {
+  const today = getTodayBrazilDate();
+
+  if (isBusinessDay(today)) {
+    return today;
+  }
+
+  return addBusinessDays(today, 1);
+}
+
+function addBusinessDays(dateString, amount) {
+  const date = parseDateString(dateString);
+  const direction = amount >= 0 ? 1 : -1;
+  let remaining = Math.abs(amount);
+
+  while (remaining > 0) {
+    date.setUTCDate(date.getUTCDate() + direction);
+
+    const day = date.getUTCDay();
+
+    if (day !== 0 && day !== 6) {
+      remaining--;
+    }
+  }
+
+  return formatDateString(date);
+}
+
+function updateAppointmentsDayHeader() {
+  const date = parseDateString(selectedAppointmentsDate);
+  const today = getTodayBrazilDate();
+  const weekday = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+    timeZone: "UTC"
+  }).format(date).replace(".", "");
+
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+
+  appointmentsDayLabel.textContent = selectedAppointmentsDate === today ? "Hoje" : weekday;
+  appointmentsDateLabel.textContent = `${day}/${month}`;
 }
 
 function handleUnauthorized(response) {
   if (response.status !== 401 && response.status !== 403) {
     return false;
-  }
-
-  clearAuth();
-  showLogin();
-  setLoginMessage("Sessão expirada. Entre novamente.", "error");
-  return true;
+  return paragraph;
 }
 
-function createInfoLine(label, value) {
-  const paragraph = document.createElement("p");
-  const strong = document.createElement("b");
+function createWhatsAppLink(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  const link = document.createElement("a");
 
-  strong.textContent = `${label}: `;
-  paragraph.appendChild(strong);
-  paragraph.append(document.createTextNode(value || "-"));
+  link.className = "appointment-phone";
+  link.textContent = phone || "Sem WhatsApp";
 
-  return paragraph;
+  if (digits.length >= 10) {
+    link.href = `https://wa.me/55${digits}`;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  }
+
+  return link;
 }
 
 async function login() {
   const user = document.getElementById("adminUser").value.trim();
   const password = document.getElementById("adminPassword").value.trim();
-
-  if (!user || !password) {
-    setLoginMessage("Preencha usuário e senha.", "error");
-    return;
-  }
-
-  const auth = "Basic " + btoa(`${user}:${password}`);
-  const loginButton = loginForm.querySelector(".submit-btn");
-
-  setLoginMessage("Entrando...");
-  loginButton.disabled = true;
-
-  try {
-    const response = await fetch(`${API_URL}/admin/login`, {
-      method: "POST",
-      headers: {
-        Authorization: auth
-      }
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      setLoginMessage(data.error || "Erro no login.", "error");
-      return;
-    }
-
-    sessionStorage.setItem("admin_user", user);
-    sessionStorage.setItem("admin_password", password);
-
-    setLoginMessage("");
-    showDashboard();
-
-    loadAppointments();
-    loadBlocks();
-  } catch (error) {
-    setLoginMessage("Erro ao conectar.", "error");
-  } finally {
-    loginButton.disabled = false;
-  }
 }
 
 async function loadAppointments() {
+  updateAppointmentsDayHeader();
   setListMessage(appointmentsList, "Carregando...");
 
   try {
     const response = await fetch(`${API_URL}/admin/appointments`, {
+    const params = new URLSearchParams({ date: selectedAppointmentsDate });
+    const response = await fetch(`${API_URL}/admin/appointments?${params.toString()}`, {
       headers: {
         Authorization: getAuth()
       }
-    });
-
-    if (handleUnauthorized(response)) return;
-
-    if (!response.ok) {
-      throw new Error("Erro ao carregar agendamentos.");
     }
 
     const parsedData = await response.json();
     const data = Array.isArray(parsedData) ? parsedData : [];
+    const rows = Array.isArray(parsedData) ? parsedData : [];
+    const data = rows.filter((appointment) => appointment.date === selectedAppointmentsDate);
 
     appointmentsList.innerHTML = "";
     appointmentsCount.textContent = data.length;
 
     if (!data.length) {
       setListMessage(appointmentsList, "Nenhum agendamento encontrado.");
+      setListMessage(appointmentsList, "Nenhum horário marcado neste dia.");
       return;
     }
 
     data.forEach((appointment) => {
       const item = document.createElement("article");
       item.className = "admin-card";
+      item.className = "admin-card appointment-card";
 
       const top = document.createElement("div");
       top.className = "admin-card-top";
+      const main = document.createElement("div");
+      main.className = "appointment-main";
 
       const service = document.createElement("strong");
       service.textContent = appointment.service || "Serviço";
+      const time = document.createElement("strong");
+      time.className = "appointment-time";
+      time.textContent = appointment.time || "--:--";
+
+      const summary = document.createElement("div");
+      summary.className = "appointment-summary";
 
       const date = document.createElement("span");
       date.textContent = appointment.date || "-";
+      const client = document.createElement("span");
+      client.className = "appointment-client";
+      client.textContent = appointment.name || "Cliente";
 
       const content = document.createElement("div");
       content.className = "admin-card-content";
       content.appendChild(createInfoLine("Cliente", appointment.name));
       content.appendChild(createInfoLine("WhatsApp", appointment.phone));
       content.appendChild(createInfoLine("Horário", appointment.time));
+      const service = document.createElement("span");
+      service.className = "appointment-service";
+      service.textContent = appointment.service || "Serviço";
 
       const button = document.createElement("button");
       button.type = "button";
       button.className = "danger-btn";
       button.textContent = "Cancelar horário";
+      button.className = "danger-btn compact-danger";
+      button.textContent = "Cancelar";
 
       button.addEventListener("click", async () => {
         if (!confirm("Cancelar esse agendamento?")) return;
-
-        button.disabled = true;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/appointments/${appointment.id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: getAuth()
-            }
-          });
-
-          if (handleUnauthorized(response)) return;
-
-          loadAppointments();
-        } finally {
-          button.disabled = false;
         }
       });
 
       top.appendChild(service);
       top.appendChild(date);
+      summary.appendChild(client);
+      summary.appendChild(service);
+      summary.appendChild(createWhatsAppLink(appointment.phone));
+
+      main.appendChild(time);
+      main.appendChild(summary);
 
       item.appendChild(top);
       item.appendChild(content);
+      item.appendChild(main);
       item.appendChild(button);
 
       appointmentsList.appendChild(item);
-    });
-  } catch (error) {
-    setListMessage(appointmentsList, "Erro ao carregar agendamentos.");
-  }
-}
-
-async function loadBlocks() {
-  setListMessage(blocksList, "Carregando...");
-
-  try {
-    const response = await fetch(`${API_URL}/admin/blocks`, {
-      headers: {
-        Authorization: getAuth()
-      }
-    });
-
-    if (handleUnauthorized(response)) return;
-
-    if (!response.ok) {
-      throw new Error("Erro ao carregar bloqueios.");
-    }
-
-    const parsedData = await response.json();
-    const data = Array.isArray(parsedData) ? parsedData : [];
-
-    blocksList.innerHTML = "";
-    blocksCount.textContent = data.length;
-
-    if (!data.length) {
-      setListMessage(blocksList, "Nenhum bloqueio encontrado.");
-      return;
-    }
-
-    data.forEach((block) => {
-      const item = document.createElement("article");
-      item.className = "admin-card";
-
-      const top = document.createElement("div");
-      top.className = "admin-card-top";
-
-      const date = document.createElement("strong");
-      date.textContent = block.date || "-";
-
-      const time = document.createElement("span");
-      time.textContent = block.time || "Dia inteiro";
-
-      const content = document.createElement("div");
-      content.className = "admin-card-content";
-      content.appendChild(createInfoLine("Motivo", block.reason));
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "danger-btn";
-      button.textContent = "Remover bloqueio";
-
-      button.addEventListener("click", async () => {
-        if (!confirm("Remover bloqueio?")) return;
-
-        button.disabled = true;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/blocks/${block.id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: getAuth()
-            }
-          });
-
-          if (handleUnauthorized(response)) return;
-
-          loadBlocks();
-        } finally {
-          button.disabled = false;
-        }
-      });
-
-      top.appendChild(date);
-      top.appendChild(time);
-
-      item.appendChild(top);
-      item.appendChild(content);
-      item.appendChild(button);
-
-      blocksList.appendChild(item);
-    });
-  } catch (error) {
-    setListMessage(blocksList, "Erro ao carregar bloqueios.");
-  }
-}
-
-blockForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const date = document.getElementById("blockDate").value;
-  const time = document.getElementById("blockTime").value;
-  const reason = document.getElementById("blockReason").value.trim();
-  const submitButton = blockForm.querySelector(".submit-btn");
-
-  if (!date || !reason) {
-    alert("Preencha os campos.");
-    return;
-  }
-
-  submitButton.disabled = true;
-
-  try {
-    const response = await fetch(`${API_URL}/admin/blocks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: getAuth()
-      },
-      body: JSON.stringify({
-        date,
-        time,
-        reason
-      })
-    });
-
-    if (handleUnauthorized(response)) return;
-
-    if (!response.ok) {
-      alert("Erro ao criar bloqueio.");
-      return;
-    }
-
-    blockForm.reset();
-    loadBlocks();
-  } catch (error) {
-    alert("Erro ao conectar.");
-  } finally {
-    submitButton.disabled = false;
-  }
+  showLogin();
 });
 
-logoutBtn.addEventListener("click", () => {
-  clearAuth();
-  showLogin();
+prevAppointmentsDay.addEventListener("click", () => {
+  selectedAppointmentsDate = addBusinessDays(selectedAppointmentsDate, -1);
+  loadAppointments();
+});
+
+nextAppointmentsDay.addEventListener("click", () => {
+  selectedAppointmentsDate = addBusinessDays(selectedAppointmentsDate, 1);
+  loadAppointments();
 });
 
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
   login();
-});
-
-if (getAuth()) {
-  showDashboard();
-  loadAppointments();
-  loadBlocks();
-} else {
-  showLogin();
-}
