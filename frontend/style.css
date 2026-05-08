@@ -474,20 +474,141 @@ select:focus{
 
 /* ADMIN */
 
-.admin-item{
-  background:#111;
-  border:1px solid var(--border);
-  padding:20px;
-  margin:14px 0;
+.admin-header{
+  width:100%;
+  padding:28px 7%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--border);
+  background:#080808;
 }
 
-.admin-item strong{
+.admin-tag{
+  color:var(--gold2);
+  font-size:.78rem;
+  text-transform:uppercase;
+  letter-spacing:3px;
+  font-weight:900;
+}
+
+.admin-container{
+  padding:40px 7%;
+}
+
+.admin-login-card{
+  max-width:720px;
+  margin:auto;
+  background:#111;
+  border:1px solid var(--border);
+  padding:38px;
+}
+
+.admin-login-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-top:24px;
+}
+
+.dashboard{
+  display:none;
+}
+
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:20px;
+  margin-bottom:35px;
+}
+
+.dashboard-card{
+  background:#111;
+  border:1px solid var(--border);
+  padding:30px;
+}
+
+.dashboard-card span{
+  display:block;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+
+.dashboard-card strong{
+  font-size:2.5rem;
   color:var(--gold2);
 }
 
-.admin-item button{
-  background:var(--danger);
+.admin-block-section{
+  background:#111;
+  border:1px solid var(--border);
+  padding:32px;
+  margin-bottom:35px;
+}
+
+.admin-form{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-top:25px;
+}
+
+.admin-content-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+
+.admin-panel-card{
+  background:#111;
+  border:1px solid var(--border);
+  padding:30px;
+}
+
+.admin-list{
+  margin-top:24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.admin-card{
+  background:#181818;
+  border:1px solid rgba(255,255,255,.06);
+  padding:20px;
+}
+
+.admin-card-top{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+.admin-card-top strong{
+  color:var(--gold2);
+}
+
+.admin-card-top span{
+  color:var(--muted);
+}
+
+.admin-card-content{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.danger-btn{
+  margin-top:18px;
+  background:#a61d1d;
   color:white;
+}
+
+.logout-btn{
+  background:#111;
+  border:1px solid var(--border);
+  color:var(--gold2);
 }
 
 /* RESPONSIVE */
@@ -495,7 +616,8 @@ select:focus{
 @media(max-width:950px){
 
   .section,
-  .booking{
+  .booking,
+  .admin-content-grid{
     grid-template-columns:1fr;
   }
 
@@ -503,7 +625,10 @@ select:focus{
     grid-template-columns:1fr;
   }
 
-  .booking-form{
+  .booking-form,
+  .admin-form,
+  .dashboard-grid,
+  .admin-login-grid{
     grid-template-columns:1fr;
   }
 
@@ -525,7 +650,8 @@ select:focus{
 
   .section,
   .services,
-  .booking{
+  .booking,
+  .admin-container{
     padding:70px 20px;
   }
 
