@@ -16,8 +16,15 @@ const prevPage = document.getElementById("prevPage");
 const nextPage = document.getElementById("nextPage");
 const pageInfo = document.getElementById("pageInfo");
 
+const blockForm = document.getElementById("blockForm");
+const blockDate = document.getElementById("blockDate");
+const blockTime = document.getElementById("blockTime");
+const blockReason = document.getElementById("blockReason");
+const blocksList = document.getElementById("blocksList");
+
 let authHeader = localStorage.getItem("adminAuth") || "";
 let appointments = [];
+let blocks = [];
 let currentPage = 1;
 const perPage = 5;
 
@@ -36,13 +43,6 @@ function showLogin() {
   loginBox.classList.remove("hidden");
 }
 
-function formatDate(date) {
-  if (!date || !date.includes("-")) return date || "-";
-
-  const [year, month, day] = date.split("-");
-  return `${day}/${month}/${year}`;
-}
-
 function escapeHTML(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -52,10 +52,23 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
+function formatDate(date) {
+  if (!date || !date.includes("-")) return date || "-";
+
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function formatTime(time) {
+  if (!time) return "Dia inteiro";
+  return time.slice(0, 5);
+}
+
 async function adminFetch(url, options = {}) {
   return fetch(url, {
     ...options,
     headers: {
+      "Content-Type": "application/json",
       ...(options.headers || {}),
       Authorization: authHeader
     }
@@ -82,6 +95,13 @@ async function login(user, password) {
   localStorage.setItem("adminAuth", authHeader);
 }
 
+async function loadAll() {
+  await Promise.all([
+    loadAppointments(),
+    loadBlocks()
+  ]);
+}
+
 async function loadAppointments() {
   appointmentsList.innerHTML = `<p class="empty">Carregando agendamentos...</p>`;
 
@@ -99,7 +119,7 @@ async function loadAppointments() {
     const data = await response.json();
 
     if (!response.ok) {
-      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar."}</p>`;
+      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar agendamentos."}</p>`;
       return;
     }
 
@@ -147,8 +167,8 @@ function renderAppointments() {
       </div>
 
       <div>
-        <small>Horário</small>
-        <strong>${escapeHTML(item.time)}</strong>
+        <small>Hora</small>
+        <strong>${escapeHTML(formatTime(item.time))}</strong>
       </div>
 
       <div>
@@ -166,8 +186,7 @@ function renderAppointments() {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
 
-      const confirmDelete = confirm("Deseja cancelar este agendamento?");
-      if (!confirmDelete) return;
+      if (!confirm("Deseja cancelar este agendamento?")) return;
 
       await cancelAppointment(id);
     });
@@ -195,6 +214,133 @@ async function cancelAppointment(id) {
   }
 }
 
+async function loadBlocks() {
+  blocksList.innerHTML = `<p class="empty">Carregando bloqueios...</p>`;
+
+  try {
+    const response = await adminFetch(`${API_URL}/admin/blocks`);
+
+    if (response.status === 401) {
+      localStorage.removeItem("adminAuth");
+      authHeader = "";
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      blocksList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar bloqueios."}</p>`;
+      return;
+    }
+
+    blocks = Array.isArray(data) ? data : [];
+    renderBlocks();
+  } catch (error) {
+    blocksList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
+  }
+}
+
+function renderBlocks() {
+  blocksList.innerHTML = "";
+
+  if (!blocks.length) {
+    blocksList.innerHTML = `<p class="empty">Nenhum bloqueio ativo.</p>`;
+    return;
+  }
+
+  blocks.forEach((block) => {
+    const card = document.createElement("article");
+    card.className = "block-card";
+
+    card.innerHTML = `
+      <div>
+        <small>Dia</small>
+        <strong>${formatDate(block.date)}</strong>
+      </div>
+
+      <div>
+        <small>Horário</small>
+        <strong>${formatTime(block.time)}</strong>
+      </div>
+
+      <div>
+        <small>Motivo</small>
+        <strong>${escapeHTML(block.reason)}</strong>
+      </div>
+
+      <button class="remove-block-btn" data-id="${block.id}">Remover</button>
+    `;
+
+    blocksList.appendChild(card);
+  });
+
+  document.querySelectorAll(".remove-block-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.id;
+
+      if (!confirm("Deseja remover este bloqueio?")) return;
+
+      await removeBlock(id);
+    });
+  });
+}
+
+async function createBlock(event) {
+  event.preventDefault();
+
+  const date = blockDate.value;
+  const time = blockTime.value || null;
+  const reason = blockReason.value.trim();
+
+  if (!date || !reason) {
+    alert("Preencha a data e o motivo.");
+    return;
+  }
+
+  try {
+    const response = await adminFetch(`${API_URL}/admin/blocks`, {
+      method: "POST",
+      body: JSON.stringify({
+        date,
+        time,
+        reason
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.error || "Erro ao criar bloqueio.");
+      return;
+    }
+
+    blockForm.reset();
+    await loadBlocks();
+    alert("Bloqueio criado com sucesso.");
+  } catch (error) {
+    alert("Erro ao conectar ao servidor.");
+  }
+}
+
+async function removeBlock(id) {
+  try {
+    const response = await adminFetch(`${API_URL}/admin/blocks/${id}`, {
+      method: "DELETE"
+    });
+
+    if (!response.ok) {
+      alert("Erro ao remover bloqueio.");
+      return;
+    }
+
+    await loadBlocks();
+  } catch (error) {
+    alert("Erro ao conectar ao servidor.");
+  }
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -204,13 +350,13 @@ loginForm.addEventListener("submit", async (event) => {
     await login(adminUser.value.trim(), adminPassword.value.trim());
     setLoginMessage("");
     showPanel();
-    await loadAppointments();
+    await loadAll();
   } catch (error) {
     setLoginMessage(error.message, "error");
   }
 });
 
-refreshBtn.addEventListener("click", loadAppointments);
+refreshBtn.addEventListener("click", loadAll);
 
 logoutBtn.addEventListener("click", () => {
   localStorage.removeItem("adminAuth");
@@ -234,7 +380,9 @@ nextPage.addEventListener("click", () => {
   }
 });
 
+blockForm.addEventListener("submit", createBlock);
+
 if (authHeader) {
   showPanel();
-  loadAppointments();
+  loadAll();
 }
