@@ -3,20 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Admin - Barbearia</title>
+  <title>BARBEARIA PRIME - Painel Admin</title>
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
   <main class="admin-container">
 
     <section class="login-box" id="loginBox">
-      <h1>Painel Admin</h1>
-      <p>Acesse para gerenciar os horários.</p>
+      <h1>BARBEARIA PRIME</h1>
+      <p>Acesse o painel administrativo.</p>
+
+      <a
+        href="https://barbearia-sigma-henna.vercel.app/"
+        target="_blank"
+        class="site-button"
+      >
+        Ir para o site
+      </a>
 
       <form id="loginForm">
         <input type="text" id="adminUser" placeholder="Usuário" required />
         <input type="password" id="adminPassword" placeholder="Senha" required />
-        <button type="submit">Entrar</button>
+        <button type="submit">Entrar no painel</button>
       </form>
 
       <p id="loginMessage" class="message"></p>
@@ -26,11 +34,19 @@
 
       <header class="panel-header">
         <div>
-          <h1>Painel da Barbearia</h1>
+          <h1>BARBEARIA PRIME</h1>
           <p>Agendamentos separados por dia</p>
         </div>
 
         <div class="header-actions">
+          <a
+            href="https://barbearia-sigma-henna.vercel.app/"
+            target="_blank"
+            class="site-link"
+          >
+            Ver site
+          </a>
+
           <button id="refreshBtn">Atualizar</button>
           <button id="logoutBtn" class="logout">Sair</button>
         </div>
