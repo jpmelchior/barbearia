@@ -3,107 +3,288 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>BARBEARIA PRIME - Painel Admin</title>
+
+  <meta
+    name="description"
+    content="Painel administrativo da Barbearia Prime para gerenciar agendamentos, histórico e bloqueios de horários."
+  />
+
+  <meta name="theme-color" content="#08080a" />
+
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
+
   <main class="admin-container">
 
-    <section class="login-box" id="loginBox">
-      
-      <a
-        href="https://barbearia-sigma-henna.vercel.app/"
-        target="_blank"
-        class="site-button"
-      >
-        BARBEARIA PRIME
-      </a>
+    <!-- LOGIN -->
+    <section class="login-screen" id="loginBox">
+      <div class="login-shell">
 
-      <form id="loginForm">
-        <input type="text" id="adminUser" placeholder="Usuário" required />
-        <input type="password" id="adminPassword" placeholder="Senha" required />
-        <button type="submit">Entrar no painel</button>
-      </form>
+        <a
+          href="https://barbearia-sigma-henna.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="brand-button"
+        >
+          BARBEARIA PRIME
+        </a>
 
-      <p id="loginMessage" class="message"></p>
+        <div class="login-card">
+          <span class="eyebrow">Painel Administrativo</span>
+
+          <h1>Entrar no painel</h1>
+
+          <p>
+            Acesse para visualizar horários, cancelar agendamentos,
+            bloquear dias e consultar histórico de clientes.
+          </p>
+
+          <form id="loginForm" class="login-form">
+            <label for="adminUser">
+              Usuário
+              <input
+                type="text"
+                id="adminUser"
+                placeholder="Digite o usuário"
+                autocomplete="username"
+                required
+              />
+            </label>
+
+            <label for="adminPassword">
+              Senha
+              <input
+                type="password"
+                id="adminPassword"
+                placeholder="Digite a senha"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+
+            <button type="submit">
+              Entrar no painel
+            </button>
+          </form>
+
+          <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
+        </div>
+
+      </div>
     </section>
 
+    <!-- PAINEL -->
     <section class="panel hidden" id="adminPanel">
 
       <header class="panel-header">
         <div>
-          <h1>BARBEARIA PRIME</h1>
-          <p>Agendamentos separados por dia</p>
+          <span class="eyebrow">Gestão da barbearia</span>
+
+          <h1>Painel Admin</h1>
+
+          <p>
+            Controle agendamentos, visualize clientes atendidos e bloqueie horários indisponíveis.
+          </p>
         </div>
 
         <div class="header-actions">
           <a
             href="https://barbearia-sigma-henna.vercel.app/"
             target="_blank"
+            rel="noopener noreferrer"
             class="site-link"
           >
             Ver site
           </a>
 
-          <button id="refreshBtn">Atualizar</button>
-          <button id="logoutBtn" class="logout">Sair</button>
+          <button type="button" id="refreshBtn" class="secondary-btn">
+            Atualizar
+          </button>
+
+          <button type="button" id="logoutBtn" class="logout">
+            Sair
+          </button>
         </div>
       </header>
 
-      <section class="tabs">
-        <button class="tab active" data-tab="scheduled">Próximos horários</button>
-        <button class="tab" data-tab="completed">Horários já atendidos</button>
-      </section>
+      <nav class="tabs" aria-label="Abas do painel">
+        <button type="button" class="tab active" data-tab="scheduled">
+          Horários marcados
+        </button>
 
-      <section class="admin-grid">
+        <button type="button" class="tab" data-tab="completed">
+          Histórico de clientes
+        </button>
+      </nav>
 
-        <div class="card">
-          <div id="scheduledSection">
-            <h2>Próximos horários</h2>
-            <p class="subtitle">Horários ativos, organizados por dia.</p>
-            <div id="appointmentsList" class="appointments-list"></div>
-          </div>
+      <div class="admin-grid">
 
-          <div id="completedSection" class="hidden">
-            <h2>Histórico de atendimentos</h2>
-            <p class="subtitle">Clientes movidos automaticamente após 3 horas do horário marcado.</p>
-            <div id="completedList" class="appointments-list"></div>
-          </div>
-        </div>
+        <!-- COLUNA PRINCIPAL -->
+        <section class="main-column">
 
-        <div class="card">
-          <h2>Bloquear dia ou horário</h2>
-          <p class="subtitle">Use quando o barbeiro não puder atender.</p>
+          <!-- AGENDAMENTOS -->
+          <section class="card" id="scheduledSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Agenda</span>
+                <h2>Horários marcados</h2>
+              </div>
 
-          <form id="blockForm" class="block-form">
-            <label>
-              Data
-              <input type="date" id="blockDate" required />
-            </label>
+              <p>
+                Cada dia mostra até 5 horários por página. Caso ultrapasse isso,
+                use a paginação do próprio dia.
+              </p>
+            </div>
 
-            <label>
-              Horário opcional
-              <input type="time" id="blockTime" />
-            </label>
+            <div id="appointmentsList" class="appointments-list">
+              <p class="empty">Carregando horários...</p>
+            </div>
+          </section>
 
-            <label>
-              Motivo
-              <input type="text" id="blockReason" placeholder="Ex: viagem, compromisso..." required />
-            </label>
+          <!-- HISTÓRICO -->
+          <section class="card hidden" id="completedSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Histórico</span>
+                <h2>Clientes atendidos</h2>
+              </div>
 
-            <button type="submit">Bloquear</button>
-          </form>
+              <p>
+                Consulte atendimentos finalizados e filtre por nome, telefone,
+                serviço ou data.
+              </p>
+            </div>
 
-          <div class="info-box">
-            <strong>Como funciona</strong>
-            <p>Se deixar o horário vazio, bloqueia o dia inteiro. Se colocar horário, bloqueia somente aquele horário.</p>
-          </div>
+            <div class="history-tools" id="historyTools">
+              <div class="history-top">
+                <div>
+                  <h3>Buscar no histórico</h3>
 
-          <h3>Bloqueios ativos</h3>
-          <div id="blocksList" class="blocks-list"></div>
-        </div>
+                  <p>
+                    Encontre rapidamente clientes atendidos e mantenha o histórico organizado.
+                  </p>
+                </div>
 
-      </section>
+                <button type="button" id="clearHistoryBtn" class="danger-soft-btn">
+                  Limpar histórico
+                </button>
+              </div>
+
+              <div class="history-filters">
+                <label for="historySearchInput">
+                  Nome, número ou serviço
+                  <input
+                    type="search"
+                    id="historySearchInput"
+                    placeholder="Ex: João, 43999999999, Barba..."
+                  />
+                </label>
+
+                <label for="historyServiceFilter">
+                  Serviço
+                  <select id="historyServiceFilter">
+                    <option value="">Todos os serviços</option>
+                  </select>
+                </label>
+
+                <label for="historyDateFilter">
+                  Data
+                  <input type="date" id="historyDateFilter" />
+                </label>
+
+                <button type="button" id="resetHistoryFilters" class="secondary-btn">
+                  Limpar filtros
+                </button>
+              </div>
+
+              <div class="history-summary">
+                <span id="historyTotal">Total atendidos: 0</span>
+                <span id="historyResult">Resultado atual: 0</span>
+              </div>
+            </div>
+
+            <div id="completedList" class="appointments-list">
+              <p class="empty">Carregando histórico...</p>
+            </div>
+          </section>
+
+        </section>
+
+        <!-- COLUNA LATERAL -->
+        <aside class="side-column">
+
+          <section class="card">
+            <div class="card-header compact">
+              <div>
+                <span class="eyebrow">Bloqueios</span>
+                <h2>Bloquear horário</h2>
+              </div>
+
+              <p>
+                Use para viagens, imprevistos, folgas ou horários indisponíveis.
+              </p>
+            </div>
+
+            <form id="blockForm" class="block-form">
+
+              <label for="blockDate">
+                Data
+                <input type="date" id="blockDate" required />
+              </label>
+
+              <label for="blockTime">
+                Horário
+                <input type="time" id="blockTime" />
+              </label>
+
+              <label for="blockReason">
+                Motivo
+                <input
+                  type="text"
+                  id="blockReason"
+                  placeholder="Ex: viagem, compromisso, manutenção..."
+                  maxlength="100"
+                  required
+                />
+              </label>
+
+              <button type="submit">
+                Criar bloqueio
+              </button>
+
+            </form>
+
+            <div class="info-box">
+              <strong>Dica</strong>
+              <p>
+                Deixe o horário vazio para bloquear o dia inteiro.
+              </p>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header compact">
+              <div>
+                <span class="eyebrow">Lista</span>
+                <h2>Bloqueios ativos</h2>
+              </div>
+
+              <p>
+                Remova bloqueios quando o horário voltar a ficar disponível.
+              </p>
+            </div>
+
+            <div id="blocksList" class="blocks-list">
+              <p class="empty">Carregando bloqueios...</p>
+            </div>
+          </section>
+
+        </aside>
+
+      </div>
 
     </section>
 
