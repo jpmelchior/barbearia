@@ -25,7 +25,21 @@ const blocksList = document.getElementById("blocksList");
 
 const tabs = document.querySelectorAll(".tab");
 
+/*
+  Aqui controla quantos horários aparecem por página dentro de cada dia.
+  Exemplo:
+  5 horários = 1 página
+  10 horários = 2 páginas
+  15 horários = 3 páginas
+*/
 const perDayPageSize = 5;
+
+/*
+  Guarda a página atual de cada dia separadamente.
+  Exemplo:
+  scheduled-2026-05-12 = página 2
+  completed-2026-05-12 = página 1
+*/
 const dayPages = {};
 
 let authHeader = localStorage.getItem("adminAuth") || "";
@@ -71,6 +85,11 @@ function parseAppointmentDateTime(item) {
 
 function isCompletedAppointment(item) {
   const appointmentDateTime = parseAppointmentDateTime(item);
+
+  /*
+    Depois de 3 horas do horário marcado,
+    o atendimento passa para a aba de finalizados.
+  */
   const completedLimit = new Date(
     appointmentDateTime.getTime() + 3 * 60 * 60 * 1000
   );
@@ -98,6 +117,18 @@ function formatDayHeader(dateString) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
 
   return `${weekDay} ${day}/${month}`;
+}
+
+function formatFullDate(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(date);
 }
 
 function formatTime(time) {
@@ -208,17 +239,19 @@ function renderAppointments() {
   renderGroupedAppointments(
     appointmentsList,
     activeAppointments,
-    "Nenhum horário futuro marcado."
+    "Nenhum horário futuro marcado.",
+    "scheduled"
   );
 
   renderGroupedAppointments(
     completedList,
     completedAppointments,
-    "Nenhum atendimento finalizado ainda."
+    "Nenhum atendimento finalizado ainda.",
+    "completed"
   );
 }
 
-function renderGroupedAppointments(container, list, emptyMessage) {
+function renderGroupedAppointments(container, list, emptyMessage, groupType) {
   container.innerHTML = "";
 
   if (!list.length) {
@@ -233,17 +266,28 @@ function renderGroupedAppointments(container, list, emptyMessage) {
     .forEach((date) => {
       const items = grouped[date];
 
-      if (!dayPages[date]) {
-        dayPages[date] = 1;
+      /*
+        Cada dia tem uma chave única.
+        Assim, a página do dia 12/05 não interfere no dia 13/05.
+      */
+      const pageKey = `${groupType}-${date}`;
+
+      if (!dayPages[pageKey]) {
+        dayPages[pageKey] = 1;
       }
 
-      const totalPages = Math.ceil(items.length / perDayPageSize);
-      const currentPage = Math.min(dayPages[date], totalPages);
+      const totalItems = items.length;
+      const totalPages = Math.ceil(totalItems / perDayPageSize);
+      const currentPage = Math.min(dayPages[pageKey], totalPages);
 
-      dayPages[date] = currentPage;
+      dayPages[pageKey] = currentPage;
 
       const start = (currentPage - 1) * perDayPageSize;
-      const visibleItems = items.slice(start, start + perDayPageSize);
+      const end = start + perDayPageSize;
+      const visibleItems = items.slice(start, end);
+
+      const firstVisible = start + 1;
+      const lastVisible = Math.min(end, totalItems);
 
       const daySection = document.createElement("section");
       daySection.className = "day-group";
@@ -252,8 +296,16 @@ function renderGroupedAppointments(container, list, emptyMessage) {
       dayHeader.className = "day-header";
 
       dayHeader.innerHTML = `
-        <strong>${formatDayHeader(date)}</strong>
-        <span>${items.length} horário(s)</span>
+        <div class="day-title-area">
+          <strong>${formatDayHeader(date)}</strong>
+          <small>${formatFullDate(date)}</small>
+        </div>
+
+        <div class="day-info-area">
+          <span>${totalItems} horário(s)</span>
+          <span>Página ${currentPage} de ${totalPages}</span>
+          <span>Mostrando ${firstVisible}-${lastVisible}</span>
+        </div>
       `;
 
       daySection.appendChild(dayHeader);
@@ -294,14 +346,23 @@ function renderGroupedAppointments(container, list, emptyMessage) {
         pagination.className = "day-pagination";
 
         pagination.innerHTML = `
-          <button class="day-prev" data-date="${date}" ${currentPage === 1 ? "disabled" : ""}>
-            Anterior
+          <button 
+            class="day-prev" 
+            data-page-key="${pageKey}" 
+            ${currentPage === 1 ? "disabled" : ""}
+          >
+            ← Anterior
           </button>
 
           <span>Página ${currentPage} de ${totalPages}</span>
 
-          <button class="day-next" data-date="${date}" ${currentPage === totalPages ? "disabled" : ""}>
-            Próxima
+          <button 
+            class="day-next" 
+            data-page-key="${pageKey}" 
+            data-total-pages="${totalPages}" 
+            ${currentPage === totalPages ? "disabled" : ""}
+          >
+            Próxima →
           </button>
         `;
 
@@ -323,16 +384,24 @@ function renderGroupedAppointments(container, list, emptyMessage) {
 
   document.querySelectorAll(".day-prev").forEach((button) => {
     button.addEventListener("click", () => {
-      const date = button.dataset.date;
-      dayPages[date] = Math.max(1, (dayPages[date] || 1) - 1);
+      const pageKey = button.dataset.pageKey;
+
+      dayPages[pageKey] = Math.max(1, (dayPages[pageKey] || 1) - 1);
+
       renderAppointments();
     });
   });
 
   document.querySelectorAll(".day-next").forEach((button) => {
     button.addEventListener("click", () => {
-      const date = button.dataset.date;
-      dayPages[date] = (dayPages[date] || 1) + 1;
+      const pageKey = button.dataset.pageKey;
+      const totalPages = Number(button.dataset.totalPages);
+
+      dayPages[pageKey] = Math.min(
+        totalPages,
+        (dayPages[pageKey] || 1) + 1
+      );
+
       renderAppointments();
     });
   });
