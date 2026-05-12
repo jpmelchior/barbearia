@@ -1135,3 +1135,69 @@ select {
     animation: none !important;
   }
 }
+/* EXPORTAÇÃO CSV */
+
+.card-header-actions {
+  display: grid;
+  gap: 14px;
+  justify-items: end;
+  max-width: 460px;
+}
+
+.history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.export-btn {
+  min-height: 46px;
+  padding: 12px 18px;
+
+  background: rgba(8, 8, 10, 0.72);
+  color: #ffffff;
+
+  border: 1px solid rgba(34, 197, 94, 0.38);
+  border-radius: 999px;
+
+  box-shadow: none;
+
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.export-btn:hover,
+.export-btn:focus-visible {
+  background: linear-gradient(135deg, #14532d, #22c55e);
+  border-color: rgba(255, 255, 255, 0.16);
+
+  box-shadow:
+    0 20px 45px rgba(34, 197, 94, 0.20),
+    0 0 35px rgba(34, 197, 94, 0.15);
+}
+
+.full-export-btn {
+  width: 100%;
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .card-header-actions {
+    max-width: none;
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .history-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .export-btn {
+    width: 100%;
+  }
+}

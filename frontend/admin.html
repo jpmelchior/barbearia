@@ -133,10 +133,16 @@
                 <h2>Horários marcados</h2>
               </div>
 
-              <p>
-                Cada dia mostra até 5 horários por página. Caso ultrapasse isso,
-                use a paginação do próprio dia.
-              </p>
+              <div class="card-header-actions">
+                <p>
+                  Cada dia mostra até 5 horários por página. Caso ultrapasse isso,
+                  use a paginação do próprio dia.
+                </p>
+
+                <button type="button" id="exportScheduledBtn" class="export-btn">
+                  Exportar agendamentos
+                </button>
+              </div>
             </div>
 
             <div id="appointmentsList" class="appointments-list">
@@ -169,9 +175,15 @@
                   </p>
                 </div>
 
-                <button type="button" id="clearHistoryBtn" class="danger-soft-btn">
-                  Limpar histórico
-                </button>
+                <div class="history-actions">
+                  <button type="button" id="exportHistoryBtn" class="export-btn">
+                    Exportar histórico
+                  </button>
+
+                  <button type="button" id="clearHistoryBtn" class="danger-soft-btn">
+                    Limpar histórico
+                  </button>
+                </div>
               </div>
 
               <div class="date-filter-panel">
@@ -293,6 +305,10 @@
               <p>
                 Remova bloqueios quando o horário voltar a ficar disponível.
               </p>
+
+              <button type="button" id="exportBlocksBtn" class="export-btn full-export-btn">
+                Exportar bloqueios
+              </button>
             </div>
 
             <div id="blocksList" class="blocks-list">

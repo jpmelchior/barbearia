@@ -31,6 +31,10 @@ const historyTotal = document.getElementById("historyTotal");
 const historyResult = document.getElementById("historyResult");
 const dateFilterButtons = document.querySelectorAll(".date-filter-btn");
 
+const exportScheduledBtn = document.getElementById("exportScheduledBtn");
+const exportHistoryBtn = document.getElementById("exportHistoryBtn");
+const exportBlocksBtn = document.getElementById("exportBlocksBtn");
+
 const tabs = document.querySelectorAll(".tab");
 
 const perDayPageSize = 5;
@@ -801,6 +805,119 @@ async function removeBlock(id) {
   }
 }
 
+function csvEscape(value) {
+  const cleanValue = String(value ?? "").replace(/\r?\n|\r/g, " ").trim();
+
+  if (
+    cleanValue.includes(";") ||
+    cleanValue.includes(",") ||
+    cleanValue.includes('"')
+  ) {
+    return `"${cleanValue.replaceAll('"', '""')}"`;
+  }
+
+  return cleanValue;
+}
+
+function buildCSV(headers, rows) {
+  const csvHeaders = headers.map(csvEscape).join(";");
+
+  const csvRows = rows.map((row) => {
+    return headers.map((header) => csvEscape(row[header])).join(";");
+  });
+
+  return [csvHeaders, ...csvRows].join("\n");
+}
+
+function downloadCSV(filename, headers, rows) {
+  if (!rows.length) {
+    alert("Não há dados para exportar.");
+    return;
+  }
+
+  const csvContent = buildCSV(headers, rows);
+  const blob = new Blob([`\uFEFF${csvContent}`], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+function getExportDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function exportScheduledAppointments() {
+  const scheduled = getScheduledAppointments();
+
+  const rows = scheduled.map((item) => ({
+    "Data": item.date || "",
+    "Dia": formatDayHeader(item.date),
+    "Hora": formatTime(item.time),
+    "Cliente": item.name || "",
+    "Telefone": item.phone || "",
+    "Servico": item.service || "",
+    "Status": getStatusLabel(getAppointmentStatus(item)),
+    "Criado em": item.created_at || "",
+    "Atualizado em": item.updated_at || ""
+  }));
+
+  downloadCSV(
+    `barbearia-agendamentos-${getExportDate()}.csv`,
+    ["Data", "Dia", "Hora", "Cliente", "Telefone", "Servico", "Status", "Criado em", "Atualizado em"],
+    rows
+  );
+}
+
+function exportHistoryAppointments() {
+  const history = getFilteredHistoryAppointments();
+
+  const rows = history.map((item) => ({
+    "Data": item.date || "",
+    "Dia": formatDayHeader(item.date),
+    "Hora": formatTime(item.time),
+    "Cliente": item.name || "",
+    "Telefone": item.phone || "",
+    "Servico": item.service || "",
+    "Status": getStatusLabel(getAppointmentStatus(item)),
+    "Criado em": item.created_at || "",
+    "Atualizado em": item.updated_at || ""
+  }));
+
+  downloadCSV(
+    `barbearia-historico-${getExportDate()}.csv`,
+    ["Data", "Dia", "Hora", "Cliente", "Telefone", "Servico", "Status", "Criado em", "Atualizado em"],
+    rows
+  );
+}
+
+function exportBlocks() {
+  const rows = blocks.map((item) => ({
+    "Data": item.date || "",
+    "Dia": formatDayHeader(item.date),
+    "Hora": formatTime(item.time),
+    "Motivo": item.reason || "",
+    "Criado em": item.created_at || ""
+  }));
+
+  downloadCSV(
+    `barbearia-bloqueios-${getExportDate()}.csv`,
+    ["Data", "Dia", "Hora", "Motivo", "Criado em"],
+    rows
+  );
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     tabs.forEach((item) => item.classList.remove("active"));
@@ -888,6 +1005,9 @@ resetHistoryFilters.addEventListener("click", () => {
 });
 
 clearHistoryBtn.addEventListener("click", clearCompletedHistory);
+exportScheduledBtn.addEventListener("click", exportScheduledAppointments);
+exportHistoryBtn.addEventListener("click", exportHistoryAppointments);
+exportBlocksBtn.addEventListener("click", exportBlocks);
 
 if (authHeader) {
   showPanel();
