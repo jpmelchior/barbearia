@@ -638,11 +638,72 @@ select {
   letter-spacing: -0.7px;
 }
 
-.history-filters {
+.date-filter-panel {
   display: grid;
-  grid-template-columns: 1.4fr 0.9fr 0.8fr auto;
+  gap: 18px;
+}
+
+.date-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.date-filter-btn {
+  min-height: 48px;
+
+  background: rgba(8, 8, 10, 0.72);
+  color: var(--white);
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+
+  box-shadow: none;
+
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.date-filter-btn:hover,
+.date-filter-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.34);
+  transform: translateY(-2px);
+  box-shadow: none;
+}
+
+.date-filter-btn.active {
+  background: linear-gradient(135deg, var(--red-dark), var(--red2));
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+
+  box-shadow:
+    0 20px 45px rgba(239, 68, 68, 0.22),
+    0 0 35px rgba(239, 68, 68, 0.16);
+}
+
+.manual-date-filter {
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 14px;
   align-items: end;
+
+  padding-top: 18px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.manual-date-filter .secondary-btn {
+  min-height: 56px;
+  white-space: nowrap;
 }
 
 .history-summary {
@@ -950,12 +1011,15 @@ select {
     width: 100%;
   }
 
-  .history-filters {
-    grid-template-columns: 1fr 1fr;
+  .date-shortcuts {
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  #resetHistoryFilters {
-    grid-column: 1 / -1;
+  .manual-date-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-date-filter .secondary-btn {
     width: 100%;
   }
 }
@@ -995,8 +1059,14 @@ select {
     flex-direction: column;
   }
 
-  .history-filters {
-    grid-template-columns: 1fr;
+  .date-shortcuts {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .date-filter-btn {
+    min-height: 52px;
+    padding: 13px 12px;
+    font-size: 0.7rem;
   }
 
   .appointment-card,
@@ -1049,6 +1119,10 @@ select {
 
   .card h2 {
     font-size: 1.7rem;
+  }
+
+  .date-shortcuts {
+    grid-template-columns: 1fr;
   }
 }
 
