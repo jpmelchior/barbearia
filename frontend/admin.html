@@ -153,18 +153,19 @@
               </div>
 
               <p>
-                Consulte atendimentos finalizados e filtre por nome, telefone,
-                serviço ou data.
+                Consulte atendimentos finalizados filtrando apenas por data.
               </p>
             </div>
 
             <div class="history-tools" id="historyTools">
+
               <div class="history-top">
                 <div>
-                  <h3>Buscar no histórico</h3>
+                  <h3>Filtrar por data</h3>
 
                   <p>
-                    Encontre rapidamente clientes atendidos e mantenha o histórico organizado.
+                    Consulte clientes atendidos escolhendo uma data específica
+                    ou usando os atalhos rápidos.
                   </p>
                 </div>
 
@@ -173,37 +174,48 @@
                 </button>
               </div>
 
-              <div class="history-filters">
-                <label for="historySearchInput">
-                  Nome, número ou serviço
-                  <input
-                    type="search"
-                    id="historySearchInput"
-                    placeholder="Ex: João, 43999999999, Barba..."
-                  />
-                </label>
+              <div class="date-filter-panel">
 
-                <label for="historyServiceFilter">
-                  Serviço
-                  <select id="historyServiceFilter">
-                    <option value="">Todos os serviços</option>
-                  </select>
-                </label>
+                <div class="date-shortcuts">
+                  <button type="button" class="date-filter-btn active" data-filter="all">
+                    Todos
+                  </button>
 
-                <label for="historyDateFilter">
-                  Data
-                  <input type="date" id="historyDateFilter" />
-                </label>
+                  <button type="button" class="date-filter-btn" data-filter="today">
+                    Hoje
+                  </button>
 
-                <button type="button" id="resetHistoryFilters" class="secondary-btn">
-                  Limpar filtros
-                </button>
+                  <button type="button" class="date-filter-btn" data-filter="yesterday">
+                    Ontem
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="last7">
+                    Últimos 7 dias
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="month">
+                    Este mês
+                  </button>
+                </div>
+
+                <div class="manual-date-filter">
+                  <label for="historyDateFilter">
+                    Escolher data específica
+                    <input type="date" id="historyDateFilter" />
+                  </label>
+
+                  <button type="button" id="resetHistoryFilters" class="secondary-btn">
+                    Limpar data
+                  </button>
+                </div>
+
               </div>
 
               <div class="history-summary">
                 <span id="historyTotal">Total atendidos: 0</span>
                 <span id="historyResult">Resultado atual: 0</span>
               </div>
+
             </div>
 
             <div id="completedList" class="appointments-list">
