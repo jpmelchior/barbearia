@@ -175,11 +175,11 @@ function resetSelectedTime() {
   setEmptyTimes("Escolha um dia primeiro.");
 }
 
-function createDayButton(date) {
-  const dateString = formatISODate(date);
-  const weekday = formatWeekday(date);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
+function createDayButton(dayInfo) {
+  const dateString = dayInfo.date;
+  const weekday = dayInfo.weekday;
+  const day = dayInfo.day;
+  const month = dayInfo.month;
 
   const button = document.createElement("button");
 
@@ -194,8 +194,12 @@ function createDayButton(date) {
   const dateText = document.createElement("strong");
   dateText.textContent = `${day}/${month}`;
 
+  const hoursText = document.createElement("small");
+  hoursText.textContent = `${dayInfo.open_time || "08:00"} às ${dayInfo.close_time || "20:00"}`;
+
   button.appendChild(weekdayText);
   button.appendChild(dateText);
+  button.appendChild(hoursText);
 
   button.addEventListener("click", () => {
     document.querySelectorAll(".day-btn").forEach((btn) => {
@@ -215,7 +219,7 @@ function createDayButton(date) {
   return button;
 }
 
-function generateDays() {
+async function generateDays() {
   daysContainer.innerHTML = "";
 
   const oldControls = document.querySelector(".pagination-controls");
@@ -224,38 +228,52 @@ function generateDays() {
     oldControls.remove();
   }
 
-  const today = new Date();
-  const startBusinessDay = currentPage * DAYS_PER_PAGE;
+  const loadingText = document.createElement("p");
+  loadingText.className = "empty-text";
+  loadingText.textContent = "Carregando dias disponíveis...";
+  daysContainer.appendChild(loadingText);
 
-  let added = 0;
-  let skipped = 0;
-  let index = 0;
+  try {
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(DAYS_PER_PAGE)
+    });
 
-  while (added < DAYS_PER_PAGE) {
-    const date = new Date(today);
+    const response = await fetch(`${API_URL}/days?${params.toString()}`);
 
-    date.setDate(today.getDate() + index);
-
-    const dayOfWeek = date.getDay();
-    const isBusinessDay = dayOfWeek !== 0 && dayOfWeek !== 6;
-
-    if (isBusinessDay) {
-      if (skipped < startBusinessDay) {
-        skipped++;
-      } else {
-        const dayButton = createDayButton(date);
-
-        dayButton.style.animationDelay = `${added * 35}ms`;
-
-        daysContainer.appendChild(dayButton);
-        added++;
-      }
+    if (!response.ok) {
+      throw new Error("Erro ao buscar dias disponíveis.");
     }
 
-    index++;
-  }
+    const days = await response.json();
 
-  createPaginationControls();
+    daysContainer.innerHTML = "";
+
+    if (!Array.isArray(days) || !days.length) {
+      const emptyText = document.createElement("p");
+      emptyText.className = "empty-text";
+      emptyText.textContent = "Nenhum dia disponível no momento.";
+      daysContainer.appendChild(emptyText);
+      return;
+    }
+
+    days.forEach((dayInfo, index) => {
+      const dayButton = createDayButton(dayInfo);
+      dayButton.style.animationDelay = `${index * 35}ms`;
+      daysContainer.appendChild(dayButton);
+    });
+
+    createPaginationControls();
+  } catch (error) {
+    console.error("Erro ao carregar dias disponíveis:", error);
+
+    daysContainer.innerHTML = "";
+
+    const errorText = document.createElement("p");
+    errorText.className = "empty-text";
+    errorText.textContent = "Erro ao carregar dias disponíveis. Tente novamente.";
+    daysContainer.appendChild(errorText);
+  }
 }
 
 function createTimeButton(time, available, reason) {
@@ -474,7 +492,7 @@ async function initializePage() {
   getDeviceId();
   setupRevealAnimations();
   await loadServices();
-  generateDays();
+  await generateDays();
 }
 
 initializePage();

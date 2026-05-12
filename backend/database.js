@@ -163,6 +163,38 @@ async function seedDefaultServices() {
   console.log("Serviços padrão cadastrados.");
 }
 
+
+
+async function seedDefaultBusinessHours() {
+  const total = await get("SELECT COUNT(*) AS total FROM business_hours");
+
+  if (total && total.total > 0) {
+    return;
+  }
+
+  const defaultHours = [
+    [0, "Domingo", 0, "08:00", "20:00"],
+    [1, "Segunda-feira", 1, "08:00", "20:00"],
+    [2, "Terça-feira", 1, "08:00", "20:00"],
+    [3, "Quarta-feira", 1, "08:00", "20:00"],
+    [4, "Quinta-feira", 1, "08:00", "20:00"],
+    [5, "Sexta-feira", 1, "08:00", "20:00"],
+    [6, "Sábado", 0, "08:00", "20:00"]
+  ];
+
+  for (const [weekday, label, isOpen, openTime, closeTime] of defaultHours) {
+    await run(
+      `
+      INSERT INTO business_hours (weekday, label, is_open, open_time, close_time)
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      [weekday, label, isOpen, openTime, closeTime]
+    );
+  }
+
+  console.log("Horários de funcionamento padrão cadastrados.");
+}
+
 async function initializeDatabase() {
   try {
     await run("PRAGMA journal_mode = WAL");
@@ -207,6 +239,20 @@ async function initializeDatabase() {
       )
     `);
 
+
+    await run(`
+      CREATE TABLE IF NOT EXISTS business_hours (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        weekday INTEGER NOT NULL UNIQUE,
+        label TEXT NOT NULL,
+        is_open INTEGER NOT NULL DEFAULT 0,
+        open_time TEXT NOT NULL DEFAULT '08:00',
+        close_time TEXT NOT NULL DEFAULT '20:00',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     await addColumnIfNotExists(
       "appointments",
       "status",
@@ -241,8 +287,34 @@ async function initializeDatabase() {
       "DATETIME DEFAULT CURRENT_TIMESTAMP"
     );
 
+
+    await addColumnIfNotExists(
+      "business_hours",
+      "is_open",
+      "INTEGER NOT NULL DEFAULT 0"
+    );
+
+    await addColumnIfNotExists(
+      "business_hours",
+      "open_time",
+      "TEXT NOT NULL DEFAULT '08:00'"
+    );
+
+    await addColumnIfNotExists(
+      "business_hours",
+      "close_time",
+      "TEXT NOT NULL DEFAULT '20:00'"
+    );
+
+    await addColumnIfNotExists(
+      "business_hours",
+      "updated_at",
+      "DATETIME DEFAULT CURRENT_TIMESTAMP"
+    );
+
     await migrateAppointmentsTableIfNeeded();
     await seedDefaultServices();
+    await seedDefaultBusinessHours();
 
     await run(`
       CREATE INDEX IF NOT EXISTS idx_appointments_date_time
@@ -283,6 +355,12 @@ async function initializeDatabase() {
     await run(`
       CREATE INDEX IF NOT EXISTS idx_services_active
       ON services(active)
+    `);
+
+
+    await run(`
+      CREATE INDEX IF NOT EXISTS idx_business_hours_weekday
+      ON business_hours(weekday)
     `);
 
     console.log("Banco de dados inicializado com sucesso.");

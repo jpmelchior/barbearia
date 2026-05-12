@@ -14,6 +14,7 @@ const completedList = document.getElementById("completedList");
 const scheduledSection = document.getElementById("scheduledSection");
 const completedSection = document.getElementById("completedSection");
 const servicesSection = document.getElementById("servicesSection");
+const businessHoursSection = document.getElementById("businessHoursSection");
 
 const refreshBtn = document.getElementById("refreshBtn");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -45,6 +46,10 @@ const saveServiceBtn = document.getElementById("saveServiceBtn");
 const cancelServiceEditBtn = document.getElementById("cancelServiceEditBtn");
 const servicesList = document.getElementById("servicesList");
 
+const businessHoursForm = document.getElementById("businessHoursForm");
+const businessHoursList = document.getElementById("businessHoursList");
+const saveBusinessHoursBtn = document.getElementById("saveBusinessHoursBtn");
+
 const tabs = document.querySelectorAll(".tab");
 
 const perDayPageSize = 5;
@@ -56,6 +61,7 @@ let savedUser = sessionStorage.getItem("adminUser") || "";
 let appointments = [];
 let blocks = [];
 let services = [];
+let businessHours = [];
 
 let historyDate = "";
 let historyDateMode = "all";
@@ -271,7 +277,8 @@ async function loadAll() {
   await Promise.all([
     loadAppointments(),
     loadBlocks(),
-    loadServices()
+    loadServices(),
+    loadBusinessHours()
   ]);
 }
 
@@ -1132,6 +1139,137 @@ async function disableService(id) {
   }
 }
 
+
+async function loadBusinessHours() {
+  businessHoursList.innerHTML = `<p class="empty">Carregando funcionamento...</p>`;
+
+  try {
+    const response = await adminFetch(`${API_URL}/admin/business-hours`);
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      businessHoursList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar funcionamento.")}</p>`;
+      return;
+    }
+
+    businessHours = Array.isArray(data) ? data : [];
+    renderBusinessHours();
+  } catch (error) {
+    businessHoursList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
+  }
+}
+
+function renderBusinessHours() {
+  businessHoursList.innerHTML = "";
+
+  if (!businessHours.length) {
+    businessHoursList.innerHTML = `<p class="empty">Nenhum horário de funcionamento cadastrado.</p>`;
+    return;
+  }
+
+  businessHours.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = `business-hour-card ${Number(item.is_open) ? "open-day" : "closed-day"}`;
+    row.dataset.weekday = item.weekday;
+
+    row.innerHTML = `
+      <div class="business-day-title">
+        <small>Dia</small>
+        <strong>${escapeHTML(item.label)}</strong>
+      </div>
+
+      <label class="checkbox-label business-open-toggle">
+        <input type="checkbox" class="business-is-open" ${Number(item.is_open) ? "checked" : ""} />
+        Aberto
+      </label>
+
+      <label>
+        Abre
+        <input type="time" class="business-open-time" value="${escapeHTML(item.open_time || "08:00")}" />
+      </label>
+
+      <label>
+        Fecha
+        <input type="time" class="business-close-time" value="${escapeHTML(item.close_time || "20:00")}" />
+      </label>
+    `;
+
+    businessHoursList.appendChild(row);
+  });
+}
+
+function collectBusinessHoursFromForm() {
+  return Array.from(businessHoursList.querySelectorAll(".business-hour-card")).map((row) => ({
+    weekday: Number(row.dataset.weekday),
+    is_open: row.querySelector(".business-is-open").checked ? 1 : 0,
+    open_time: row.querySelector(".business-open-time").value,
+    close_time: row.querySelector(".business-close-time").value
+  }));
+}
+
+async function saveBusinessHours(event) {
+  event.preventDefault();
+
+  const hours = collectBusinessHoursFromForm();
+
+  if (!hours.length) {
+    alert("Nenhum horário para salvar.");
+    return;
+  }
+
+  for (const item of hours) {
+    if (!item.open_time || !item.close_time) {
+      alert("Preencha os horários de abertura e fechamento.");
+      return;
+    }
+
+    if (item.open_time >= item.close_time) {
+      alert("O horário de abertura precisa ser menor que o de fechamento.");
+      return;
+    }
+  }
+
+  saveBusinessHoursBtn.disabled = true;
+  saveBusinessHoursBtn.textContent = "Salvando...";
+
+  try {
+    const response = await adminFetch(`${API_URL}/admin/business-hours`, {
+      method: "PUT",
+      body: JSON.stringify({ hours })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      alert(data.error || "Erro ao salvar funcionamento.");
+      return;
+    }
+
+    await loadBusinessHours();
+    alert(data.message || "Funcionamento atualizado com sucesso.");
+  } catch (error) {
+    alert("Erro ao conectar ao servidor.");
+  } finally {
+    saveBusinessHoursBtn.disabled = false;
+    saveBusinessHoursBtn.textContent = "Salvar funcionamento";
+  }
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     tabs.forEach((item) => item.classList.remove("active"));
@@ -1143,18 +1281,28 @@ tabs.forEach((tab) => {
       scheduledSection.classList.remove("hidden");
       completedSection.classList.add("hidden");
       servicesSection.classList.add("hidden");
+      businessHoursSection.classList.add("hidden");
     }
 
     if (selectedTab === "completed") {
       completedSection.classList.remove("hidden");
       scheduledSection.classList.add("hidden");
       servicesSection.classList.add("hidden");
+      businessHoursSection.classList.add("hidden");
     }
 
     if (selectedTab === "services") {
       servicesSection.classList.remove("hidden");
       scheduledSection.classList.add("hidden");
       completedSection.classList.add("hidden");
+      businessHoursSection.classList.add("hidden");
+    }
+
+    if (selectedTab === "business-hours") {
+      businessHoursSection.classList.remove("hidden");
+      scheduledSection.classList.add("hidden");
+      completedSection.classList.add("hidden");
+      servicesSection.classList.add("hidden");
     }
   });
 });
@@ -1233,6 +1381,7 @@ exportHistoryBtn.addEventListener("click", exportHistoryAppointments);
 exportBlocksBtn.addEventListener("click", exportBlocks);
 serviceForm.addEventListener("submit", saveService);
 cancelServiceEditBtn.addEventListener("click", resetServiceForm);
+businessHoursForm.addEventListener("submit", saveBusinessHours);
 
 if (authHeader) {
   showPanel();

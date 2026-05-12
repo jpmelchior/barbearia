@@ -122,6 +122,10 @@
         <button type="button" class="tab" data-tab="services">
           Serviços e preços
         </button>
+
+        <button type="button" class="tab" data-tab="business-hours">
+          Funcionamento
+        </button>
       </nav>
 
       <div class="admin-grid">
@@ -305,6 +309,38 @@
             <div id="servicesList" class="services-admin-list">
               <p class="empty">Carregando serviços...</p>
             </div>
+          </section>
+
+          <!-- FUNCIONAMENTO -->
+          <section class="card hidden" id="businessHoursSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Horários</span>
+                <h2>Funcionamento semanal</h2>
+              </div>
+
+              <p>
+                Defina quais dias a barbearia abre e o horário de atendimento de cada dia.
+              </p>
+            </div>
+
+            <div class="info-box service-info-box">
+              <strong>Importante</strong>
+              <p>
+                Os horários são gerados de 1 em 1 hora. Se um dia estiver fechado,
+                ele não aparece para o cliente no agendamento.
+              </p>
+            </div>
+
+            <form id="businessHoursForm" class="business-hours-form">
+              <div id="businessHoursList" class="business-hours-list">
+                <p class="empty">Carregando funcionamento...</p>
+              </div>
+
+              <button type="submit" id="saveBusinessHoursBtn">
+                Salvar funcionamento
+              </button>
+            </form>
           </section>
 
 

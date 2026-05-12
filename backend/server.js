@@ -293,36 +293,6 @@ function parseDateString(dateString) {
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
-function getDatesBetween(startDateString, endDateString) {
-  const dates = [];
-  const startDate = parseDateString(startDateString);
-  const endDate = parseDateString(endDateString);
-
-  const currentDate = new Date(startDate);
-
-  while (currentDate <= endDate) {
-    const dateString = formatUTCDate(currentDate);
-
-    if (isWeekday(dateString)) {
-      dates.push(dateString);
-    }
-
-    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-  }
-
-  return dates;
-}
-
-function isBusinessTimeSlot(timeString) {
-  if (!isValidTimeString(timeString)) {
-    return false;
-  }
-
-  const [hour, minute] = timeString.split(":").map(Number);
-
-  return minute === 0 && hour >= OPENING_HOUR && hour < CLOSING_HOUR;
-}
-
 function getDatePartsInBrazil(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: TIME_ZONE,
@@ -353,15 +323,17 @@ function getBrazilNow() {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
-function isWeekday(dateString) {
+function getWeekdayFromDateString(dateString) {
   if (!isValidDateString(dateString)) {
-    return false;
+    return null;
   }
 
-  const date = parseDateString(dateString);
-  const day = date.getUTCDay();
+  return parseDateString(dateString).getUTCDay();
+}
 
-  return day >= 1 && day <= 5;
+function isWeekday(dateString) {
+  const weekday = getWeekdayFromDateString(dateString);
+  return weekday !== null && weekday >= 1 && weekday <= 5;
 }
 
 function formatWeekday(date) {
@@ -373,26 +345,83 @@ function formatWeekday(date) {
     .replace(".", "");
 }
 
-function generateTimes(dateString) {
+function normalizeTimeSlot(value) {
+  const time = normalizeText(value, 5);
+
+  if (!isValidTimeString(time)) {
+    return null;
+  }
+
+  const [, minute] = time.split(":").map(Number);
+
+  if (minute !== 0) {
+    return null;
+  }
+
+  return time;
+}
+
+function timeToHour(timeString) {
+  return Number(String(timeString || "00:00").split(":")[0]);
+}
+
+async function getBusinessHoursByWeekday(weekday) {
+  return dbGet(
+    `
+    SELECT weekday, label, is_open, open_time, close_time
+    FROM business_hours
+    WHERE weekday = ?
+    LIMIT 1
+    `,
+    [weekday]
+  );
+}
+
+async function getBusinessHoursForDate(dateString) {
+  const weekday = getWeekdayFromDateString(dateString);
+
+  if (weekday === null) {
+    return null;
+  }
+
+  return getBusinessHoursByWeekday(weekday);
+}
+
+async function isOpenBusinessDate(dateString) {
+  const hours = await getBusinessHoursForDate(dateString);
+
+  return Boolean(hours && Number(hours.is_open) === 1);
+}
+
+async function generateTimes(dateString) {
+  const hours = await getBusinessHoursForDate(dateString);
+
+  if (!hours || Number(hours.is_open) !== 1) {
+    return [];
+  }
+
   const today = getTodayBrazilDate();
   const currentHour = getBrazilHour();
 
-  let startHour = OPENING_HOUR;
+  const openHour = timeToHour(hours.open_time);
+  const closeHour = timeToHour(hours.close_time);
+
+  let startHour = openHour;
 
   if (dateString === today) {
-    startHour = Math.max(OPENING_HOUR, currentHour + 1);
+    startHour = Math.max(openHour, currentHour + 1);
   }
 
   const times = [];
 
-  for (let hour = startHour; hour < CLOSING_HOUR; hour++) {
+  for (let hour = startHour; hour < closeHour; hour++) {
     times.push(`${String(hour).padStart(2, "0")}:00`);
   }
 
   return times;
 }
 
-function validateBusinessDate(date) {
+async function validateBusinessDate(date) {
   if (!date) {
     return "Informe uma data.";
   }
@@ -405,11 +434,53 @@ function validateBusinessDate(date) {
     return "Não é possível usar datas anteriores.";
   }
 
-  if (!isWeekday(date)) {
-    return "Agendamentos apenas de segunda a sexta.";
+  const hours = await getBusinessHoursForDate(date);
+
+  if (!hours || Number(hours.is_open) !== 1) {
+    return "A barbearia está fechada nessa data.";
   }
 
   return null;
+}
+
+async function getDatesBetween(startDateString, endDateString) {
+  const dates = [];
+  const startDate = parseDateString(startDateString);
+  const endDate = parseDateString(endDateString);
+
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    const dateString = formatUTCDate(currentDate);
+
+    if (await isOpenBusinessDate(dateString)) {
+      dates.push(dateString);
+    }
+
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
+async function isBusinessTimeSlot(dateString, timeString) {
+  const time = normalizeTimeSlot(timeString);
+
+  if (!time) {
+    return false;
+  }
+
+  const hours = await getBusinessHoursForDate(dateString);
+
+  if (!hours || Number(hours.is_open) !== 1) {
+    return false;
+  }
+
+  const hour = timeToHour(time);
+  const openHour = timeToHour(hours.open_time);
+  const closeHour = timeToHour(hours.close_time);
+
+  return hour >= openHour && hour < closeHour;
 }
 
 function validateAppointmentPayload(body) {
@@ -449,26 +520,14 @@ function validateAppointmentPayload(body) {
   appointment.phone = phoneDigits;
 
 
-  const dateError = validateBusinessDate(appointment.date);
-
-  if (dateError) {
-    return { error: dateError };
-  }
-
   if (!isValidTimeString(appointment.time)) {
     return { error: "Informe um horário válido." };
-  }
-
-  const availableTimes = generateTimes(appointment.date);
-
-  if (!availableTimes.includes(appointment.time)) {
-    return { error: "Esse horário já passou ou não está disponível." };
   }
 
   return { appointment };
 }
 
-function validateBlockPayload(body) {
+async function validateBlockPayload(body) {
   const startDate = normalizeText(body.startDate || body.date, 10);
   const endDate = normalizeText(body.endDate || body.startDate || body.date, 10);
 
@@ -479,38 +538,44 @@ function validateBlockPayload(body) {
     reason: normalizeText(body.reason, 120)
   };
 
-  const startDateError = validateBusinessDate(block.startDate);
+  const startDateError = await validateBusinessDate(block.startDate);
 
   if (startDateError) {
     return { error: startDateError };
   }
 
-  const endDateError = validateBusinessDate(block.endDate);
-
-  if (endDateError) {
-    return { error: endDateError };
+  if (!isValidDateString(block.endDate)) {
+    return { error: "Informe uma data final válida." };
   }
 
   if (block.endDate < block.startDate) {
     return { error: "A data final não pode ser menor que a data inicial." };
   }
 
-  const dates = getDatesBetween(block.startDate, block.endDate);
+  const dates = await getDatesBetween(block.startDate, block.endDate);
 
   if (!dates.length) {
-    return { error: "Nenhum dia útil encontrado nesse intervalo." };
+    return { error: "Nenhum dia aberto encontrado nesse intervalo." };
   }
 
   if (dates.length > 90) {
-    return { error: "O intervalo não pode passar de 90 dias úteis." };
+    return { error: "O intervalo não pode passar de 90 dias abertos." };
   }
 
-  if (block.time && !isBusinessTimeSlot(block.time)) {
-    return {
-      error: `Informe um horário cheio dentro do funcionamento: ${String(
-        OPENING_HOUR
-      ).padStart(2, "0")}:00 até ${String(CLOSING_HOUR).padStart(2, "0")}:00.`
-    };
+  if (block.time) {
+    const invalidTimeDate = [];
+
+    for (const date of dates) {
+      if (!(await isBusinessTimeSlot(date, block.time))) {
+        invalidTimeDate.push(date);
+      }
+    }
+
+    if (invalidTimeDate.length) {
+      return {
+        error: "Informe um horário cheio dentro do funcionamento dos dias selecionados."
+      };
+    }
   }
 
   if (!block.reason) {
@@ -522,6 +587,43 @@ function validateBlockPayload(body) {
       ...block,
       dates,
       time: block.time || null
+    }
+  };
+}
+
+async function validateBusinessHoursPayload(body) {
+  const weekday = Number(body.weekday);
+  const isOpen =
+    body.is_open === true ||
+    body.is_open === 1 ||
+    body.is_open === "1" ||
+    body.isOpen === true ||
+    body.isOpen === 1 ||
+    body.isOpen === "1"
+      ? 1
+      : 0;
+
+  const openTime = normalizeTimeSlot(body.open_time || body.openTime || "08:00");
+  const closeTime = normalizeTimeSlot(body.close_time || body.closeTime || "20:00");
+
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+    return { error: "Dia da semana inválido." };
+  }
+
+  if (!openTime || !closeTime) {
+    return { error: "Informe horários cheios e válidos, como 08:00 e 20:00." };
+  }
+
+  if (timeToHour(openTime) >= timeToHour(closeTime)) {
+    return { error: "O horário de abertura precisa ser menor que o de fechamento." };
+  }
+
+  return {
+    businessHour: {
+      weekday,
+      is_open: isOpen,
+      open_time: openTime,
+      close_time: closeTime
     }
   };
 }
@@ -769,6 +871,123 @@ app.delete("/api/admin/services/:id", adminAuth, async (req, res) => {
   }
 });
 
+
+
+app.get("/api/business-hours", async (req, res) => {
+  try {
+    const rows = await dbAll(
+      `
+      SELECT weekday, label, is_open, open_time, close_time
+      FROM business_hours
+      ORDER BY weekday ASC
+      `
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Erro em GET /api/business-hours:", error);
+    res.status(500).json({ error: "Erro ao listar funcionamento." });
+  }
+});
+
+app.get("/api/admin/business-hours", adminAuth, async (req, res) => {
+  try {
+    const rows = await dbAll(
+      `
+      SELECT id, weekday, label, is_open, open_time, close_time, created_at, updated_at
+      FROM business_hours
+      ORDER BY weekday ASC
+      `
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Erro em GET /api/admin/business-hours:", error);
+    res.status(500).json({ error: "Erro ao listar funcionamento." });
+  }
+});
+
+app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
+  const payload = {
+    ...req.body,
+    weekday: req.params.weekday
+  };
+
+  const { businessHour, error } = await validateBusinessHoursPayload(payload);
+
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  try {
+    const result = await dbRun(
+      `
+      UPDATE business_hours
+      SET is_open = ?,
+          open_time = ?,
+          close_time = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE weekday = ?
+      `,
+      [
+        businessHour.is_open,
+        businessHour.open_time,
+        businessHour.close_time,
+        businessHour.weekday
+      ]
+    );
+
+    if (!result.changes) {
+      return res.status(404).json({ error: "Dia de funcionamento não encontrado." });
+    }
+
+    res.json({ message: "Funcionamento atualizado com sucesso." });
+  } catch (error) {
+    console.error("Erro em PATCH /api/admin/business-hours/:weekday:", error);
+    res.status(500).json({ error: "Erro ao atualizar funcionamento." });
+  }
+});
+
+app.put("/api/admin/business-hours", adminAuth, async (req, res) => {
+  const items = Array.isArray(req.body.hours) ? req.body.hours : [];
+
+  if (!items.length) {
+    return res.status(400).json({ error: "Envie os horários da semana." });
+  }
+
+  try {
+    for (const item of items) {
+      const { businessHour, error } = await validateBusinessHoursPayload(item);
+
+      if (error) {
+        return res.status(400).json({ error });
+      }
+
+      await dbRun(
+        `
+        UPDATE business_hours
+        SET is_open = ?,
+            open_time = ?,
+            close_time = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE weekday = ?
+        `,
+        [
+          businessHour.is_open,
+          businessHour.open_time,
+          businessHour.close_time,
+          businessHour.weekday
+        ]
+      );
+    }
+
+    res.json({ message: "Funcionamento semanal atualizado com sucesso." });
+  } catch (error) {
+    console.error("Erro em PUT /api/admin/business-hours:", error);
+    res.status(500).json({ error: "Erro ao atualizar funcionamento." });
+  }
+});
+
 app.get("/api/today", (req, res) => {
   res.json({
     date: getTodayBrazilDate(),
@@ -777,31 +996,49 @@ app.get("/api/today", (req, res) => {
   });
 });
 
-app.get("/api/days", (req, res) => {
+app.get("/api/days", async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 60);
+  const page = Math.max(Number(req.query.page || 0), 0);
   const today = getTodayBrazilDate();
   const days = [];
 
   let index = 0;
+  let skippedOpenDays = 0;
+  const skip = page * limit;
 
-  while (days.length < 30) {
-    const date = parseDateString(today);
-    date.setUTCDate(date.getUTCDate() + index);
+  try {
+    while (days.length < limit && index < 730) {
+      const date = parseDateString(today);
+      date.setUTCDate(date.getUTCDate() + index);
 
-    const dateString = formatUTCDate(date);
+      const dateString = formatUTCDate(date);
+      const hours = await getBusinessHoursForDate(dateString);
+      const isOpen = hours && Number(hours.is_open) === 1;
 
-    if (isWeekday(dateString)) {
-      days.push({
-        date: dateString,
-        weekday: formatWeekday(date),
-        day: String(date.getUTCDate()).padStart(2, "0"),
-        month: String(date.getUTCMonth() + 1).padStart(2, "0")
-      });
+      if (isOpen) {
+        if (skippedOpenDays < skip) {
+          skippedOpenDays++;
+        } else {
+          days.push({
+            date: dateString,
+            weekday: formatWeekday(date),
+            weekday_index: getWeekdayFromDateString(dateString),
+            day: String(date.getUTCDate()).padStart(2, "0"),
+            month: String(date.getUTCMonth() + 1).padStart(2, "0"),
+            open_time: hours.open_time,
+            close_time: hours.close_time
+          });
+        }
+      }
+
+      index++;
     }
 
-    index++;
+    res.json(days);
+  } catch (error) {
+    console.error("Erro em GET /api/days:", error);
+    res.status(500).json({ error: "Erro ao listar dias disponíveis." });
   }
-
-  res.json(days);
 });
 
 app.get("/api/times", async (req, res) => {
@@ -823,16 +1060,18 @@ app.get("/api/times", async (req, res) => {
     });
   }
 
-  if (!isWeekday(date)) {
-    return res.json({
-      date,
-      times: [],
-      message: "Agendamentos apenas de segunda a sexta."
-    });
-  }
-
   try {
-    const allTimes = generateTimes(date);
+    const hours = await getBusinessHoursForDate(date);
+
+    if (!hours || Number(hours.is_open) !== 1) {
+      return res.json({
+        date,
+        times: [],
+        message: "A barbearia está fechada nessa data."
+      });
+    }
+
+    const allTimes = await generateTimes(date);
 
     const appointments = await dbAll(
       `
@@ -889,6 +1128,10 @@ app.get("/api/times", async (req, res) => {
 
     res.json({
       date,
+      business_hours: {
+        open_time: hours.open_time,
+        close_time: hours.close_time
+      },
       times
     });
   } catch (error) {
@@ -915,6 +1158,20 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     if (!selectedService) {
       return res.status(400).json({
         error: "Serviço inválido ou indisponível."
+      });
+    }
+
+    const dateError = await validateBusinessDate(appointment.date);
+
+    if (dateError) {
+      return res.status(400).json({ error: dateError });
+    }
+
+    const availableTimes = await generateTimes(appointment.date);
+
+    if (!availableTimes.includes(appointment.time)) {
+      return res.status(400).json({
+        error: "Esse horário já passou ou não está disponível."
       });
     }
 
@@ -1126,7 +1383,7 @@ app.get("/api/admin/blocks", adminAuth, async (req, res) => {
 });
 
 app.post("/api/admin/blocks", adminAuth, async (req, res) => {
-  const { block, error } = validateBlockPayload(req.body);
+  const { block, error } = await validateBlockPayload(req.body);
 
   if (error) {
     return res.status(400).json({ error });

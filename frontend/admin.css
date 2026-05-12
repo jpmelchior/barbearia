@@ -490,7 +490,7 @@ select {
   width: calc(100% - 48px);
 
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 
   padding: 24px 0 0;
@@ -1334,5 +1334,89 @@ select {
   .service-card-actions,
   .service-card-actions button {
     width: 100%;
+  }
+}
+
+
+/* FUNCIONAMENTO SEMANAL */
+
+.business-hours-form {
+  display: grid;
+  gap: 20px;
+}
+
+.business-hours-list {
+  display: grid;
+  gap: 14px;
+}
+
+.business-hour-card {
+  display: grid;
+  grid-template-columns: 1.1fr 0.7fr 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+
+  padding: 16px;
+  background: rgba(8, 8, 10, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-left: 5px solid var(--red2);
+  border-radius: 18px;
+
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.business-hour-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+}
+
+.business-hour-card.closed-day {
+  opacity: 0.72;
+  border-left-color: var(--muted2);
+}
+
+.business-day-title small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted2);
+  font-size: 0.67rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.business-day-title strong {
+  display: block;
+  color: var(--white);
+  font-family: Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.business-open-toggle {
+  min-height: 56px;
+  align-content: center;
+}
+
+@media (max-width: 1180px) {
+  .business-hour-card {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .business-hour-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs {
+    grid-template-columns: 1fr;
   }
 }
