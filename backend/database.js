@@ -22,6 +22,15 @@ function run(sql, params = []) {
   });
 }
 
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
 function all(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
@@ -33,7 +42,6 @@ function all(sql, params = []) {
 
 async function addColumnIfNotExists(tableName, columnName, columnDefinition) {
   const columns = await all(`PRAGMA table_info(${tableName})`);
-
   const exists = columns.some((column) => column.name === columnName);
 
   if (!exists) {
@@ -42,6 +50,90 @@ async function addColumnIfNotExists(tableName, columnName, columnDefinition) {
     );
 
     console.log(`Coluna ${columnName} adicionada em ${tableName}.`);
+  }
+}
+
+async function migrateAppointmentsTableIfNeeded() {
+  const table = await get(
+    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'appointments'"
+  );
+
+  const tableSql = String(table?.sql || "").toLowerCase();
+
+  const hasOldUniqueConstraint =
+    tableSql.includes("unique(date, time)") ||
+    tableSql.includes("unique (date, time)");
+
+  if (!hasOldUniqueConstraint) {
+    return;
+  }
+
+  console.log("Migrando appointments para remover UNIQUE(date, time)...");
+
+  await run("PRAGMA foreign_keys = OFF");
+  await run("BEGIN TRANSACTION");
+
+  try {
+    await run(`
+      CREATE TABLE appointments_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        service TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'scheduled',
+        ip TEXT,
+        device_id TEXT,
+        user_agent TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await run(`
+      INSERT INTO appointments_new
+      (
+        id,
+        name,
+        phone,
+        service,
+        date,
+        time,
+        status,
+        ip,
+        device_id,
+        user_agent,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        name,
+        phone,
+        service,
+        date,
+        time,
+        COALESCE(status, 'scheduled'),
+        ip,
+        device_id,
+        user_agent,
+        created_at,
+        COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+      FROM appointments
+    `);
+
+    await run("DROP TABLE appointments");
+    await run("ALTER TABLE appointments_new RENAME TO appointments");
+    await run("COMMIT");
+
+    console.log("Migração de appointments concluída.");
+  } catch (error) {
+    await run("ROLLBACK");
+    console.error("Erro na migração de appointments:", error.message);
+    process.exit(1);
+  } finally {
+    await run("PRAGMA foreign_keys = ON");
   }
 }
 
@@ -64,8 +156,7 @@ async function initializeDatabase() {
         device_id TEXT,
         user_agent TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(date, time)
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -79,10 +170,6 @@ async function initializeDatabase() {
       )
     `);
 
-    /*
-      Migração para bancos antigos:
-      Se appointments já existia antes, adicionamos as colunas novas.
-    */
     await addColumnIfNotExists(
       "appointments",
       "status",
@@ -101,12 +188,17 @@ async function initializeDatabase() {
       "DATETIME DEFAULT CURRENT_TIMESTAMP"
     );
 
-    /*
-      Índices só são criados depois das colunas existirem.
-    */
+    await migrateAppointmentsTableIfNeeded();
+
     await run(`
       CREATE INDEX IF NOT EXISTS idx_appointments_date_time
       ON appointments(date, time)
+    `);
+
+    await run(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_appointments_unique_scheduled_slot
+      ON appointments(date, time)
+      WHERE status = 'scheduled'
     `);
 
     await run(`
@@ -141,6 +233,6 @@ async function initializeDatabase() {
   }
 }
 
-initializeDatabase();
+db.ready = initializeDatabase();
 
 module.exports = db;

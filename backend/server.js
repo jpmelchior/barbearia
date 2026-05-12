@@ -42,7 +42,12 @@ if (!Number.isInteger(OPENING_HOUR) || !Number.isInteger(CLOSING_HOUR)) {
   process.exit(1);
 }
 
-if (OPENING_HOUR < 0 || OPENING_HOUR > 23 || CLOSING_HOUR < 1 || CLOSING_HOUR > 24) {
+if (
+  OPENING_HOUR < 0 ||
+  OPENING_HOUR > 23 ||
+  CLOSING_HOUR < 1 ||
+  CLOSING_HOUR > 24
+) {
   console.error("ERRO: horário de funcionamento inválido.");
   process.exit(1);
 }
@@ -79,7 +84,7 @@ const corsOptions = allowedOrigins.length
 
         return callback(new Error("Origem não permitida pelo CORS."));
       },
-      methods: ["GET", "POST", "DELETE", "OPTIONS"],
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: false
     }
@@ -723,7 +728,11 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
 app.get("/api/admin/appointments", adminAuth, async (req, res) => {
   try {
     const rows = await dbAll(
-      "SELECT * FROM appointments ORDER BY date ASC, time ASC"
+      `
+      SELECT * FROM appointments
+      WHERE status IS NULL OR status != 'hidden'
+      ORDER BY date ASC, time ASC
+      `
     );
 
     res.json(rows);
@@ -759,6 +768,87 @@ app.delete("/api/admin/appointments/:id", adminAuth, async (req, res) => {
   } catch (error) {
     console.error("Erro em DELETE /api/admin/appointments/:id:", error);
     res.status(500).json({ error: "Erro ao cancelar agendamento." });
+  }
+});
+
+app.patch("/api/admin/appointments/:id/status", adminAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  const status = normalizeText(req.body.status, 20);
+
+  const allowedStatuses = new Set([
+    "scheduled",
+    "completed",
+    "cancelled",
+    "no_show",
+    "hidden"
+  ]);
+
+  const statusMessages = {
+    scheduled: "Agendamento restaurado com sucesso.",
+    completed: "Agendamento marcado como atendido.",
+    cancelled: "Agendamento cancelado com sucesso.",
+    no_show: "Agendamento marcado como falta.",
+    hidden: "Registro removido do histórico."
+  };
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: "Agendamento inválido." });
+  }
+
+  if (!allowedStatuses.has(status)) {
+    return res.status(400).json({ error: "Status inválido." });
+  }
+
+  try {
+    const appointment = await dbGet(
+      "SELECT id, date, time FROM appointments WHERE id = ?",
+      [id]
+    );
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Agendamento não encontrado." });
+    }
+
+    if (status === "scheduled") {
+      const conflict = await dbGet(
+        `
+        SELECT id FROM appointments
+        WHERE date = ?
+        AND time = ?
+        AND status = 'scheduled'
+        AND id != ?
+        LIMIT 1
+        `,
+        [appointment.date, appointment.time, id]
+      );
+
+      if (conflict) {
+        return res.status(409).json({
+          error: "Não foi possível restaurar. Esse horário já está ocupado."
+        });
+      }
+    }
+
+    const result = await dbRun(
+      `
+      UPDATE appointments
+      SET status = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [status, id]
+    );
+
+    if (!result.changes) {
+      return res.status(404).json({ error: "Agendamento não encontrado." });
+    }
+
+    res.json({
+      message: statusMessages[status] || "Status atualizado com sucesso."
+    });
+  } catch (error) {
+    console.error("Erro em PATCH /api/admin/appointments/:id/status:", error);
+    res.status(500).json({ error: "Erro ao atualizar status do agendamento." });
   }
 });
 
@@ -856,12 +946,29 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Ambiente: ${NODE_ENV}`);
-});
+let server;
+
+db.ready
+  .then(() => {
+    server = app.listen(PORT, () => {
+      console.log(`Servidor rodando na porta ${PORT}`);
+      console.log(`Ambiente: ${NODE_ENV}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Erro ao preparar servidor:", error.message);
+    process.exit(1);
+  });
 
 function shutdown() {
+  if (!server) {
+    db.close(() => {
+      process.exit(0);
+    });
+
+    return;
+  }
+
   server.close(() => {
     db.close(() => {
       process.exit(0);

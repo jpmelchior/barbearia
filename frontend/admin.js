@@ -35,9 +35,8 @@ const tabs = document.querySelectorAll(".tab");
 const perDayPageSize = 5;
 const dayPages = {};
 
-let authHeader = localStorage.getItem("adminAuth") || "";
-let savedUser = localStorage.getItem("adminUser") || "";
-let savedPassword = localStorage.getItem("adminPassword") || "";
+let authHeader = sessionStorage.getItem("adminAuth") || "";
+let savedUser = sessionStorage.getItem("adminUser") || "";
 
 let appointments = [];
 let blocks = [];
@@ -45,8 +44,22 @@ let blocks = [];
 let historyDate = "";
 let historyDateMode = "all";
 
+localStorage.removeItem("adminAuth");
+localStorage.removeItem("adminPassword");
+
 adminUser.value = savedUser;
-adminPassword.value = savedPassword;
+adminPassword.value = "";
+
+adminUser.setAttribute("autocomplete", "username");
+adminPassword.setAttribute("autocomplete", "current-password");
+
+function clearAdminSession() {
+  authHeader = "";
+  sessionStorage.removeItem("adminAuth");
+  sessionStorage.removeItem("adminUser");
+  localStorage.removeItem("adminAuth");
+  localStorage.removeItem("adminPassword");
+}
 
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
@@ -62,8 +75,9 @@ function showLogin() {
   adminPanel.classList.add("hidden");
   loginBox.classList.remove("hidden");
 
-  adminUser.value = localStorage.getItem("adminUser") || adminUser.value;
-  adminPassword.value = localStorage.getItem("adminPassword") || adminPassword.value;
+  adminUser.value = sessionStorage.getItem("adminUser") || adminUser.value || "";
+  adminPassword.value = "";
+  adminPassword.focus();
 }
 
 function escapeHTML(value) {
@@ -75,18 +89,24 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
-function parseAppointmentDateTime(item) {
-  return new Date(`${item.date}T${item.time || "00:00"}:00`);
+function getAppointmentStatus(item) {
+  return item.status || "scheduled";
 }
 
-function isCompletedAppointment(item) {
-  const appointmentDateTime = parseAppointmentDateTime(item);
+function getStatusLabel(status) {
+  const labels = {
+    scheduled: "Agendado",
+    completed: "Atendido",
+    cancelled: "Cancelado",
+    no_show: "Faltou",
+    hidden: "Oculto"
+  };
 
-  const completedLimit = new Date(
-    appointmentDateTime.getTime() + 3 * 60 * 60 * 1000
-  );
+  return labels[status] || "Agendado";
+}
 
-  return new Date() >= completedLimit;
+function parseAppointmentDateTime(item) {
+  return new Date(`${item.date}T${item.time || "00:00"}:00`);
 }
 
 function formatDayHeader(dateString) {
@@ -203,7 +223,14 @@ async function adminFetch(url, options = {}) {
 }
 
 async function login(user, password) {
-  const token = btoa(`${user}:${password}`);
+  const cleanUser = String(user || "").trim();
+  const cleanPassword = String(password || "").trim();
+
+  if (!cleanUser || !cleanPassword) {
+    throw new Error("Informe usuário e senha.");
+  }
+
+  const token = btoa(`${cleanUser}:${cleanPassword}`);
   authHeader = `Basic ${token}`;
 
   const response = await fetch(`${API_URL}/admin/login`, {
@@ -214,14 +241,14 @@ async function login(user, password) {
   });
 
   if (!response.ok) {
-    authHeader = "";
-    localStorage.removeItem("adminAuth");
+    clearAdminSession();
     throw new Error("Usuário ou senha incorretos.");
   }
 
-  localStorage.setItem("adminAuth", authHeader);
-  localStorage.setItem("adminUser", user);
-  localStorage.setItem("adminPassword", password);
+  sessionStorage.setItem("adminAuth", authHeader);
+  sessionStorage.setItem("adminUser", cleanUser);
+
+  adminPassword.value = "";
 }
 
 async function loadAll() {
@@ -239,8 +266,7 @@ async function loadAppointments() {
     const response = await adminFetch(`${API_URL}/admin/appointments`);
 
     if (response.status === 401) {
-      localStorage.removeItem("adminAuth");
-      authHeader = "";
+      clearAdminSession();
       showLogin();
       setLoginMessage("Faça login novamente.", "error");
       return;
@@ -249,8 +275,8 @@ async function loadAppointments() {
     const data = await response.json();
 
     if (!response.ok) {
-      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar horários."}</p>`;
-      completedList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar histórico."}</p>`;
+      appointmentsList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar horários.")}</p>`;
+      completedList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar histórico.")}</p>`;
       return;
     }
 
@@ -262,22 +288,25 @@ async function loadAppointments() {
   }
 }
 
-function getActiveAppointments() {
+function getScheduledAppointments() {
   return sortAppointments(
-    appointments.filter((item) => !isCompletedAppointment(item))
+    appointments.filter((item) => getAppointmentStatus(item) === "scheduled")
   );
 }
 
-function getCompletedAppointments() {
+function getHistoryAppointments() {
   return sortAppointments(
-    appointments.filter((item) => isCompletedAppointment(item))
+    appointments.filter((item) => {
+      const status = getAppointmentStatus(item);
+      return status === "completed" || status === "cancelled" || status === "no_show";
+    })
   ).reverse();
 }
 
-function getFilteredCompletedAppointments() {
-  const completedAppointments = getCompletedAppointments();
+function getFilteredHistoryAppointments() {
+  const historyAppointments = getHistoryAppointments();
 
-  return completedAppointments.filter((item) => {
+  return historyAppointments.filter((item) => {
     const date = item.date || "";
 
     if (historyDate) {
@@ -305,32 +334,32 @@ function getFilteredCompletedAppointments() {
 }
 
 function renderAppointments() {
-  const activeAppointments = getActiveAppointments();
-  const completedAppointments = getFilteredCompletedAppointments();
-  const allCompleted = getCompletedAppointments();
+  const scheduledAppointments = getScheduledAppointments();
+  const filteredHistory = getFilteredHistoryAppointments();
+  const allHistory = getHistoryAppointments();
 
-  historyTotal.textContent = `Total atendidos: ${allCompleted.length}`;
-  historyResult.textContent = `Resultado atual: ${completedAppointments.length}`;
-  clearHistoryBtn.disabled = allCompleted.length === 0;
+  historyTotal.textContent = `Total no histórico: ${allHistory.length}`;
+  historyResult.textContent = `Resultado atual: ${filteredHistory.length}`;
+  clearHistoryBtn.disabled = allHistory.length === 0;
 
   renderGroupedAppointments(
     appointmentsList,
-    activeAppointments,
-    "Nenhum horário futuro marcado.",
+    scheduledAppointments,
+    "Nenhum horário marcado.",
     "scheduled"
   );
 
   renderGroupedAppointments(
     completedList,
-    completedAppointments,
-    "Nenhum cliente encontrado no histórico.",
-    "completed"
+    filteredHistory,
+    "Nenhum registro encontrado no histórico.",
+    "history"
   );
 }
 
-function resetCompletedPagination() {
+function resetHistoryPagination() {
   Object.keys(dayPages).forEach((key) => {
-    if (key.startsWith("completed-")) {
+    if (key.startsWith("history-")) {
       dayPages[key] = 1;
     }
   });
@@ -377,12 +406,12 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
 
       dayHeader.innerHTML = `
         <div class="day-title-area">
-          <strong>${formatDayHeader(date)}</strong>
-          <small>${formatFullDate(date)}</small>
+          <strong>${escapeHTML(formatDayHeader(date))}</strong>
+          <small>${escapeHTML(formatFullDate(date))}</small>
         </div>
 
         <div class="day-info-area">
-          <span>${totalItems} horário(s)</span>
+          <span>${totalItems} registro(s)</span>
           <span>Página ${currentPage} de ${totalPages}</span>
           <span>Mostrando ${firstVisible}-${lastVisible}</span>
         </div>
@@ -391,8 +420,35 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
       daySection.appendChild(dayHeader);
 
       visibleItems.forEach((item) => {
+        const status = getAppointmentStatus(item);
         const card = document.createElement("article");
-        card.className = "appointment-card";
+
+        card.className = `appointment-card status-${status}`;
+
+        const buttons =
+          groupType === "scheduled"
+            ? `
+              <button class="status-btn done-btn" data-id="${escapeHTML(item.id)}" data-status="completed">
+                Atendido
+              </button>
+
+              <button class="status-btn no-show-btn" data-id="${escapeHTML(item.id)}" data-status="no_show">
+                Faltou
+              </button>
+
+              <button class="cancel-btn" data-id="${escapeHTML(item.id)}" data-status="cancelled">
+                Cancelar
+              </button>
+            `
+            : `
+              <button class="status-btn restore-btn" data-id="${escapeHTML(item.id)}" data-status="scheduled">
+                Restaurar
+              </button>
+
+              <button class="cancel-btn" data-id="${escapeHTML(item.id)}" data-status="hidden">
+                Remover
+              </button>
+            `;
 
         card.innerHTML = `
           <div class="time-box">
@@ -415,9 +471,14 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
             <strong>${escapeHTML(item.phone)}</strong>
           </div>
 
-          <button class="cancel-btn" data-id="${item.id}">
-            ${groupType === "completed" ? "Remover" : "Cancelar"}
-          </button>
+          <div>
+            <small>Status</small>
+            <strong>${escapeHTML(getStatusLabel(status))}</strong>
+          </div>
+
+          <div class="card-actions">
+            ${buttons}
+          </div>
         `;
 
         daySection.appendChild(card);
@@ -430,7 +491,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
         pagination.innerHTML = `
           <button 
             class="day-prev" 
-            data-page-key="${pageKey}" 
+            data-page-key="${escapeHTML(pageKey)}" 
             ${currentPage === 1 ? "disabled" : ""}
           >
             ← Anterior
@@ -440,7 +501,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
 
           <button 
             class="day-next" 
-            data-page-key="${pageKey}" 
+            data-page-key="${escapeHTML(pageKey)}" 
             data-total-pages="${totalPages}" 
             ${currentPage === totalPages ? "disabled" : ""}
           >
@@ -454,14 +515,24 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
       container.appendChild(daySection);
     });
 
-  container.querySelectorAll(".cancel-btn").forEach((button) => {
+  container.querySelectorAll("[data-status]").forEach((button) => {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
-      const actionText = groupType === "completed" ? "remover este registro" : "cancelar este agendamento";
+      const status = button.dataset.status;
 
-      if (!confirm(`Deseja ${actionText}?`)) return;
+      const messages = {
+        completed: "marcar este cliente como atendido",
+        no_show: "marcar este cliente como falta",
+        cancelled: "cancelar este agendamento",
+        scheduled: "restaurar este agendamento",
+        hidden: "remover este registro do histórico"
+      };
 
-      await cancelAppointment(id);
+      if (!confirm(`Deseja ${messages[status] || "alterar este registro"}?`)) {
+        return;
+      }
+
+      await updateAppointmentStatus(id, status);
     });
   });
 
@@ -490,14 +561,24 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
   });
 }
 
-async function cancelAppointment(id) {
+async function updateAppointmentStatus(id, status) {
   try {
-    const response = await adminFetch(`${API_URL}/admin/appointments/${id}`, {
-      method: "DELETE"
+    const response = await adminFetch(`${API_URL}/admin/appointments/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
     });
 
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
     if (!response.ok) {
-      alert("Erro ao remover registro.");
+      alert(data.error || "Erro ao atualizar registro.");
       return;
     }
 
@@ -508,26 +589,38 @@ async function cancelAppointment(id) {
 }
 
 async function clearCompletedHistory() {
-  const completedAppointments = getCompletedAppointments();
+  const historyAppointments = getHistoryAppointments();
 
-  if (!completedAppointments.length) {
+  if (!historyAppointments.length) {
     alert("Não existe histórico para limpar.");
     return;
   }
 
   const confirmed = confirm(
-    `Deseja limpar todo o histórico de ${completedAppointments.length} cliente(s) atendido(s)? Essa ação não pode ser desfeita.`
+    `Deseja remover ${historyAppointments.length} registro(s) do histórico? Essa ação apenas oculta os registros do painel.`
   );
 
   if (!confirmed) return;
 
-  try {
-    const ids = completedAppointments.map((item) => item.id);
+  const secondConfirm = confirm(
+    "Confirma novamente? Os registros sairão do histórico exibido."
+  );
 
-    for (const id of ids) {
-      const response = await adminFetch(`${API_URL}/admin/appointments/${id}`, {
-        method: "DELETE"
+  if (!secondConfirm) return;
+
+  try {
+    for (const item of historyAppointments) {
+      const response = await adminFetch(`${API_URL}/admin/appointments/${item.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "hidden" })
       });
+
+      if (response.status === 401) {
+        clearAdminSession();
+        showLogin();
+        setLoginMessage("Faça login novamente.", "error");
+        return;
+      }
 
       if (!response.ok) {
         alert("Alguns registros não puderam ser removidos.");
@@ -543,7 +636,7 @@ async function clearCompletedHistory() {
       item.classList.toggle("active", item.dataset.filter === "all");
     });
 
-    resetCompletedPagination();
+    resetHistoryPagination();
 
     await loadAppointments();
 
@@ -560,8 +653,7 @@ async function loadBlocks() {
     const response = await adminFetch(`${API_URL}/admin/blocks`);
 
     if (response.status === 401) {
-      localStorage.removeItem("adminAuth");
-      authHeader = "";
+      clearAdminSession();
       showLogin();
       setLoginMessage("Faça login novamente.", "error");
       return;
@@ -570,7 +662,7 @@ async function loadBlocks() {
     const data = await response.json();
 
     if (!response.ok) {
-      blocksList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar bloqueios."}</p>`;
+      blocksList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar bloqueios.")}</p>`;
       return;
     }
 
@@ -602,12 +694,12 @@ function renderBlocks() {
       card.innerHTML = `
         <div>
           <small>Dia</small>
-          <strong>${formatDayHeader(block.date)}</strong>
+          <strong>${escapeHTML(formatDayHeader(block.date))}</strong>
         </div>
 
         <div>
           <small>Horário</small>
-          <strong>${formatTime(block.time)}</strong>
+          <strong>${escapeHTML(formatTime(block.time))}</strong>
         </div>
 
         <div>
@@ -615,7 +707,7 @@ function renderBlocks() {
           <strong>${escapeHTML(block.reason)}</strong>
         </div>
 
-        <button class="remove-block-btn" data-id="${block.id}">Remover</button>
+        <button class="remove-block-btn" data-id="${escapeHTML(block.id)}">Remover</button>
       `;
 
       blocksList.appendChild(card);
@@ -656,6 +748,13 @@ async function createBlock(event) {
 
     const data = await response.json();
 
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
     if (!response.ok) {
       alert(data.error || "Erro ao criar bloqueio.");
       return;
@@ -675,6 +774,13 @@ async function removeBlock(id) {
     const response = await adminFetch(`${API_URL}/admin/blocks/${id}`, {
       method: "DELETE"
     });
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
 
     if (!response.ok) {
       alert("Erro ao remover bloqueio.");
@@ -712,7 +818,7 @@ loginForm.addEventListener("submit", async (event) => {
   setLoginMessage("Entrando...");
 
   try {
-    await login(adminUser.value.trim(), adminPassword.value.trim());
+    await login(adminUser.value, adminPassword.value);
 
     setLoginMessage("");
     showPanel();
@@ -726,9 +832,12 @@ loginForm.addEventListener("submit", async (event) => {
 refreshBtn.addEventListener("click", loadAll);
 
 logoutBtn.addEventListener("click", () => {
-  authHeader = "";
-  localStorage.removeItem("adminAuth");
+  clearAdminSession();
+  appointments = [];
+  blocks = [];
+  adminPassword.value = "";
   showLogin();
+  setLoginMessage("Você saiu do painel.", "");
 });
 
 blockForm.addEventListener("submit", createBlock);
@@ -742,7 +851,7 @@ dateFilterButtons.forEach((button) => {
     historyDate = "";
     historyDateFilter.value = "";
 
-    resetCompletedPagination();
+    resetHistoryPagination();
     renderAppointments();
   });
 });
@@ -753,7 +862,7 @@ historyDateFilter.addEventListener("change", () => {
 
   dateFilterButtons.forEach((item) => item.classList.remove("active"));
 
-  resetCompletedPagination();
+  resetHistoryPagination();
   renderAppointments();
 });
 
@@ -766,7 +875,7 @@ resetHistoryFilters.addEventListener("click", () => {
     item.classList.toggle("active", item.dataset.filter === "all");
   });
 
-  resetCompletedPagination();
+  resetHistoryPagination();
   renderAppointments();
 });
 
@@ -775,4 +884,6 @@ clearHistoryBtn.addEventListener("click", clearCompletedHistory);
 if (authHeader) {
   showPanel();
   loadAll();
+} else {
+  showLogin();
 }
