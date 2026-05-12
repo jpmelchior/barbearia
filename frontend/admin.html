@@ -243,8 +243,13 @@
             <form id="blockForm" class="block-form">
 
               <label for="blockDate">
-                Data
+                Data inicial
                 <input type="date" id="blockDate" required />
+              </label>
+
+              <label for="blockEndDate">
+                Data final
+                <input type="date" id="blockEndDate" />
               </label>
 
               <label for="blockTime">
@@ -272,7 +277,8 @@
             <div class="info-box">
               <strong>Dica</strong>
               <p>
-                Deixe o horário vazio para bloquear o dia inteiro.
+                Deixe o horário vazio para bloquear o dia inteiro. Para bloquear apenas um dia,
+                deixe a data final vazia.
               </p>
             </div>
           </section>

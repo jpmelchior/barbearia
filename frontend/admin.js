@@ -19,6 +19,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 const blockForm = document.getElementById("blockForm");
 const blockDate = document.getElementById("blockDate");
+const blockEndDate = document.getElementById("blockEndDate");
 const blockTime = document.getElementById("blockTime");
 const blockReason = document.getElementById("blockReason");
 const blocksList = document.getElementById("blocksList");
@@ -727,12 +728,18 @@ function renderBlocks() {
 async function createBlock(event) {
   event.preventDefault();
 
-  const date = blockDate.value;
+  const startDate = blockDate.value;
+  const endDate = blockEndDate.value || blockDate.value;
   const time = blockTime.value || null;
   const reason = blockReason.value.trim();
 
-  if (!date || !reason) {
-    alert("Preencha a data e o motivo.");
+  if (!startDate || !reason) {
+    alert("Preencha a data inicial e o motivo.");
+    return;
+  }
+
+  if (endDate < startDate) {
+    alert("A data final não pode ser menor que a data inicial.");
     return;
   }
 
@@ -740,7 +747,8 @@ async function createBlock(event) {
     const response = await adminFetch(`${API_URL}/admin/blocks`, {
       method: "POST",
       body: JSON.stringify({
-        date,
+        startDate,
+        endDate,
         time,
         reason
       })
@@ -763,7 +771,7 @@ async function createBlock(event) {
     blockForm.reset();
     await loadBlocks();
 
-    alert("Bloqueio criado com sucesso.");
+    alert(data.message || "Bloqueio criado com sucesso.");
   } catch (error) {
     alert("Erro ao conectar ao servidor.");
   }

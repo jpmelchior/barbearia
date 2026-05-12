@@ -265,6 +265,36 @@ function parseDateString(dateString) {
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
+function getDatesBetween(startDateString, endDateString) {
+  const dates = [];
+  const startDate = parseDateString(startDateString);
+  const endDate = parseDateString(endDateString);
+
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    const dateString = formatUTCDate(currentDate);
+
+    if (isWeekday(dateString)) {
+      dates.push(dateString);
+    }
+
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
+function isBusinessTimeSlot(timeString) {
+  if (!isValidTimeString(timeString)) {
+    return false;
+  }
+
+  const [hour, minute] = timeString.split(":").map(Number);
+
+  return minute === 0 && hour >= OPENING_HOUR && hour < CLOSING_HOUR;
+}
+
 function getDatePartsInBrazil(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: TIME_ZONE,
@@ -414,24 +444,48 @@ function validateAppointmentPayload(body) {
 }
 
 function validateBlockPayload(body) {
+  const startDate = normalizeText(body.startDate || body.date, 10);
+  const endDate = normalizeText(body.endDate || body.startDate || body.date, 10);
+
   const block = {
-    date: normalizeText(body.date, 10),
+    startDate,
+    endDate,
     time: normalizeText(body.time, 5),
     reason: normalizeText(body.reason, 120)
   };
 
-  const dateError = validateBusinessDate(block.date);
+  const startDateError = validateBusinessDate(block.startDate);
 
-  if (dateError) {
-    return { error: dateError };
+  if (startDateError) {
+    return { error: startDateError };
   }
 
-  if (block.time && !isValidTimeString(block.time)) {
-    return { error: "Informe um horário válido." };
+  const endDateError = validateBusinessDate(block.endDate);
+
+  if (endDateError) {
+    return { error: endDateError };
   }
 
-  if (block.time && !generateTimes(block.date).includes(block.time)) {
-    return { error: "Horário fora do funcionamento." };
+  if (block.endDate < block.startDate) {
+    return { error: "A data final não pode ser menor que a data inicial." };
+  }
+
+  const dates = getDatesBetween(block.startDate, block.endDate);
+
+  if (!dates.length) {
+    return { error: "Nenhum dia útil encontrado nesse intervalo." };
+  }
+
+  if (dates.length > 90) {
+    return { error: "O intervalo não pode passar de 90 dias úteis." };
+  }
+
+  if (block.time && !isBusinessTimeSlot(block.time)) {
+    return {
+      error: `Informe um horário cheio dentro do funcionamento: ${String(
+        OPENING_HOUR
+      ).padStart(2, "0")}:00 até ${String(CLOSING_HOUR).padStart(2, "0")}:00.`
+    };
   }
 
   if (!block.reason) {
@@ -441,6 +495,7 @@ function validateBlockPayload(body) {
   return {
     block: {
       ...block,
+      dates,
       time: block.time || null
     }
   };
@@ -873,33 +928,58 @@ app.post("/api/admin/blocks", adminAuth, async (req, res) => {
   }
 
   try {
-    const existingBlock = await dbGet(
-      `
-      SELECT id FROM blocked_times
-      WHERE date = ?
-      AND (
-        (time IS NULL AND ? IS NULL)
-        OR time = ?
-      )
-      LIMIT 1
-      `,
-      [block.date, block.time, block.time]
-    );
+    let created = 0;
+    let skipped = 0;
 
-    if (existingBlock) {
-      return res.status(409).json({ error: "Esse bloqueio já existe." });
+    for (const date of block.dates) {
+      const existingBlock = await dbGet(
+        block.time
+          ? `
+            SELECT id FROM blocked_times
+            WHERE date = ?
+            AND (time IS NULL OR time = ?)
+            LIMIT 1
+            `
+          : `
+            SELECT id FROM blocked_times
+            WHERE date = ?
+            AND time IS NULL
+            LIMIT 1
+            `,
+        block.time ? [date, block.time] : [date]
+      );
+
+      if (existingBlock) {
+        skipped++;
+        continue;
+      }
+
+      await dbRun(
+        "INSERT INTO blocked_times (date, time, reason) VALUES (?, ?, ?)",
+        [date, block.time, block.reason]
+      );
+
+      created++;
     }
 
-    const result = await dbRun(
-      "INSERT INTO blocked_times (date, time, reason) VALUES (?, ?, ?)",
-      [block.date, block.time, block.reason]
-    );
+    if (!created && skipped) {
+      return res.status(409).json({
+        error: "Todos os bloqueios desse intervalo já existem."
+      });
+    }
 
     res.status(201).json({
-      message: "Bloqueio criado com sucesso.",
+      message:
+        created === 1
+          ? "Bloqueio criado com sucesso."
+          : `${created} bloqueios criados com sucesso.${skipped ? ` ${skipped} já existiam.` : ""}`,
       block: {
-        id: result.lastID,
-        ...block
+        startDate: block.startDate,
+        endDate: block.endDate,
+        time: block.time,
+        reason: block.reason,
+        created,
+        skipped
       }
     });
   } catch (error) {
