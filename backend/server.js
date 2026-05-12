@@ -3,6 +3,7 @@
 require("dotenv").config();
 
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -20,6 +21,8 @@ const CLOSING_HOUR = Number(process.env.CLOSING_HOUR || 20);
 
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
 
 const MAX_APPOINTMENTS_PER_IP_PER_DAY = Number(
   process.env.MAX_APPOINTMENTS_PER_IP_PER_DAY || 3
@@ -28,6 +31,12 @@ const MAX_APPOINTMENTS_PER_IP_PER_DAY = Number(
 if (!ADMIN_USER || !ADMIN_PASSWORD) {
   console.error("ERRO: ADMIN_USER e ADMIN_PASSWORD são obrigatórios.");
   console.error("Configure essas variáveis no Render ou no arquivo backend/.env local.");
+  process.exit(1);
+}
+
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error("ERRO: JWT_SECRET é obrigatório e precisa ter pelo menos 32 caracteres.");
+  console.error("Configure JWT_SECRET no Render ou no arquivo backend/.env local.");
   process.exit(1);
 }
 
@@ -160,32 +169,47 @@ function safeCompare(value, expected) {
   return crypto.timingSafeEqual(valueBuffer, expectedBuffer);
 }
 
+function validateAdminCredentials(user, password) {
+  return safeCompare(user, ADMIN_USER) && safeCompare(password, ADMIN_PASSWORD);
+}
+
+function createAdminToken(user) {
+  return jwt.sign(
+    {
+      role: "admin",
+      user
+    },
+    JWT_SECRET,
+    {
+      expiresIn: JWT_EXPIRES_IN
+    }
+  );
+}
+
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
 
-  if (!auth || !auth.startsWith("Basic ")) {
+  if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Acesso negado." });
   }
 
+  const token = auth.slice(7).trim();
+
+  if (!token) {
+    return res.status(401).json({ error: "Token ausente." });
+  }
+
   try {
-    const base64 = auth.slice(6);
-    const credentials = Buffer.from(base64, "base64").toString("utf8");
-    const separator = credentials.indexOf(":");
+    const payload = jwt.verify(token, JWT_SECRET);
 
-    if (separator === -1) {
-      return res.status(401).json({ error: "Login inválido." });
+    if (!payload || payload.role !== "admin") {
+      return res.status(401).json({ error: "Token inválido." });
     }
 
-    const user = credentials.slice(0, separator);
-    const password = credentials.slice(separator + 1);
-
-    if (!safeCompare(user, ADMIN_USER) || !safeCompare(password, ADMIN_PASSWORD)) {
-      return res.status(401).json({ error: "Login inválido." });
-    }
-
+    req.admin = payload;
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Login inválido." });
+    return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
   }
 }
 
@@ -1471,8 +1495,27 @@ app.delete("/api/admin/blocks/:id", adminAuth, async (req, res) => {
   }
 });
 
-app.post("/api/admin/login", loginLimiter, adminAuth, (req, res) => {
-  res.json({ message: "Login realizado com sucesso." });
+app.post("/api/admin/login", loginLimiter, (req, res) => {
+  const user = normalizeText(req.body.user || req.body.username, 80);
+  const password = String(req.body.password || "");
+
+  if (!user || !password) {
+    return res.status(400).json({ error: "Informe usuário e senha." });
+  }
+
+  if (!validateAdminCredentials(user, password)) {
+    return res.status(401).json({ error: "Usuário ou senha incorretos." });
+  }
+
+  const token = createAdminToken(user);
+
+  res.json({
+    message: "Login realizado com sucesso.",
+    token,
+    token_type: "Bearer",
+    expires_in: JWT_EXPIRES_IN,
+    user
+  });
 });
 
 app.use((req, res) => {

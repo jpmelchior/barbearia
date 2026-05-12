@@ -55,7 +55,8 @@ const tabs = document.querySelectorAll(".tab");
 const perDayPageSize = 5;
 const dayPages = {};
 
-let authHeader = sessionStorage.getItem("adminAuth") || "";
+let adminToken = sessionStorage.getItem("adminToken") || "";
+let authHeader = adminToken ? `Bearer ${adminToken}` : "";
 let savedUser = sessionStorage.getItem("adminUser") || "";
 
 let appointments = [];
@@ -76,10 +77,13 @@ adminUser.setAttribute("autocomplete", "username");
 adminPassword.setAttribute("autocomplete", "current-password");
 
 function clearAdminSession() {
+  adminToken = "";
   authHeader = "";
+  sessionStorage.removeItem("adminToken");
   sessionStorage.removeItem("adminAuth");
   sessionStorage.removeItem("adminUser");
   localStorage.removeItem("adminAuth");
+  localStorage.removeItem("adminToken");
   localStorage.removeItem("adminPassword");
 }
 
@@ -252,22 +256,28 @@ async function login(user, password) {
     throw new Error("Informe usuário e senha.");
   }
 
-  const token = btoa(`${cleanUser}:${cleanPassword}`);
-  authHeader = `Basic ${token}`;
-
   const response = await fetch(`${API_URL}/admin/login`, {
     method: "POST",
     headers: {
-      Authorization: authHeader
-    }
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user: cleanUser,
+      password: cleanPassword
+    })
   });
 
-  if (!response.ok) {
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.token) {
     clearAdminSession();
-    throw new Error("Usuário ou senha incorretos.");
+    throw new Error(data.error || "Usuário ou senha incorretos.");
   }
 
-  sessionStorage.setItem("adminAuth", authHeader);
+  adminToken = data.token;
+  authHeader = `Bearer ${adminToken}`;
+
+  sessionStorage.setItem("adminToken", adminToken);
   sessionStorage.setItem("adminUser", cleanUser);
 
   adminPassword.value = "";
@@ -1331,6 +1341,7 @@ logoutBtn.addEventListener("click", () => {
   appointments = [];
   blocks = [];
   services = [];
+  businessHours = [];
   adminPassword.value = "";
   showLogin();
   setLoginMessage("Você saiu do painel.", "");
@@ -1383,7 +1394,7 @@ serviceForm.addEventListener("submit", saveService);
 cancelServiceEditBtn.addEventListener("click", resetServiceForm);
 businessHoursForm.addEventListener("submit", saveBusinessHours);
 
-if (authHeader) {
+if (adminToken) {
   showPanel();
   loadAll();
 } else {
