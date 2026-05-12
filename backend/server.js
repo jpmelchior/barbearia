@@ -21,6 +21,10 @@ const CLOSING_HOUR = Number(process.env.CLOSING_HOUR || 20);
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+const MAX_APPOINTMENTS_PER_IP_PER_DAY = Number(
+  process.env.MAX_APPOINTMENTS_PER_IP_PER_DAY || 3
+);
+
 if (!ADMIN_USER || !ADMIN_PASSWORD) {
   console.error("ERRO: ADMIN_USER e ADMIN_PASSWORD são obrigatórios.");
   console.error("Configure essas variáveis no Render ou no arquivo backend/.env local.");
@@ -103,7 +107,7 @@ const loginLimiter = rateLimit({
 
 const appointmentLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -192,6 +196,36 @@ function normalizeText(value, maxLength) {
 
 function onlyDigits(value) {
   return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeDeviceId(value) {
+  const clean = normalizeText(value, 120);
+
+  if (!clean) {
+    return "";
+  }
+
+  if (!/^[a-zA-Z0-9._:-]{10,120}$/.test(clean)) {
+    return "";
+  }
+
+  return clean;
+}
+
+function getClientIp(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    return forwardedFor.split(",")[0].trim().slice(0, 80);
+  }
+
+  return String(req.ip || req.socket?.remoteAddress || "")
+    .replace("::ffff:", "")
+    .slice(0, 80);
+}
+
+function getUserAgent(req) {
+  return normalizeText(req.headers["user-agent"], 255);
 }
 
 function isValidDateString(dateString) {
@@ -321,7 +355,8 @@ function validateAppointmentPayload(body) {
     phone: normalizeText(body.phone, 20),
     service: normalizeText(body.service, 40),
     date: normalizeText(body.date, 10),
-    time: normalizeText(body.time, 5)
+    time: normalizeText(body.time, 5),
+    device_id: normalizeDeviceId(body.device_id || body.deviceId)
   };
 
   if (
@@ -406,6 +441,64 @@ function validateBlockPayload(body) {
   };
 }
 
+async function validateAntiAbuseRules(appointment, metadata) {
+  const samePhone = await dbGet(
+    `
+    SELECT id FROM appointments
+    WHERE phone = ?
+    AND date = ?
+    AND status = 'scheduled'
+    LIMIT 1
+    `,
+    [appointment.phone, appointment.date]
+  );
+
+  if (samePhone) {
+    return {
+      error: "Este WhatsApp já possui um agendamento nesse dia."
+    };
+  }
+
+  if (appointment.device_id) {
+    const sameDevice = await dbGet(
+      `
+      SELECT id FROM appointments
+      WHERE device_id = ?
+      AND date = ?
+      AND status = 'scheduled'
+      LIMIT 1
+      `,
+      [appointment.device_id, appointment.date]
+    );
+
+    if (sameDevice) {
+      return {
+        error: "Este aparelho já possui um agendamento nesse dia."
+      };
+    }
+  }
+
+  if (metadata.ip) {
+    const ipUsage = await dbGet(
+      `
+      SELECT COUNT(*) AS total FROM appointments
+      WHERE ip = ?
+      AND date = ?
+      AND status = 'scheduled'
+      `,
+      [metadata.ip, appointment.date]
+    );
+
+    if (ipUsage && ipUsage.total >= MAX_APPOINTMENTS_PER_IP_PER_DAY) {
+      return {
+        error: "Muitos agendamentos foram feitos por essa conexão hoje. Tente novamente amanhã."
+      };
+    }
+  }
+
+  return null;
+}
+
 app.get("/", (req, res) => {
   res.json({
     message: "API da barbearia funcionando",
@@ -485,7 +578,11 @@ app.get("/api/times", async (req, res) => {
     const allTimes = generateTimes(date);
 
     const appointments = await dbAll(
-      "SELECT time FROM appointments WHERE date = ?",
+      `
+      SELECT time FROM appointments
+      WHERE date = ?
+      AND status = 'scheduled'
+      `,
       [date]
     );
 
@@ -550,6 +647,11 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     return res.status(400).json({ error });
   }
 
+  const metadata = {
+    ip: getClientIp(req),
+    user_agent: getUserAgent(req)
+  };
+
   try {
     const blocks = await dbAll(
       "SELECT time, reason FROM blocked_times WHERE date = ?",
@@ -571,18 +673,27 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
       });
     }
 
+    const antiAbuseError = await validateAntiAbuseRules(appointment, metadata);
+
+    if (antiAbuseError) {
+      return res.status(429).json(antiAbuseError);
+    }
+
     const result = await dbRun(
       `
       INSERT INTO appointments
-      (name, phone, service, date, time)
-      VALUES (?, ?, ?, ?, ?)
+      (name, phone, service, date, time, status, ip, device_id, user_agent)
+      VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)
       `,
       [
         appointment.name,
         appointment.phone,
         appointment.service,
         appointment.date,
-        appointment.time
+        appointment.time,
+        metadata.ip,
+        appointment.device_id || null,
+        metadata.user_agent
       ]
     );
 
@@ -590,7 +701,8 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
       message: "Agendamento realizado com sucesso!",
       appointment: {
         id: result.lastID,
-        ...appointment
+        ...appointment,
+        status: "scheduled"
       }
     });
   } catch (error) {
@@ -629,7 +741,15 @@ app.delete("/api/admin/appointments/:id", adminAuth, async (req, res) => {
   }
 
   try {
-    const result = await dbRun("DELETE FROM appointments WHERE id = ?", [id]);
+    const result = await dbRun(
+      `
+      UPDATE appointments
+      SET status = 'cancelled',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [id]
+    );
 
     if (!result.changes) {
       return res.status(404).json({ error: "Agendamento não encontrado." });
