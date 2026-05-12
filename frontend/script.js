@@ -57,7 +57,7 @@ function createPaginationControls() {
   }
 
   const controls = document.createElement("div");
-  controls.className = "pagination-controls";
+  controls.className = "pagination-controls reveal show";
 
   const prevButton = document.createElement("button");
   prevButton.type = "button";
@@ -79,6 +79,7 @@ function createPaginationControls() {
       currentPage--;
       generateDays();
       resetSelectedTime();
+      daysContainer.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   });
 
@@ -86,6 +87,7 @@ function createPaginationControls() {
     currentPage++;
     generateDays();
     resetSelectedTime();
+    daysContainer.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
   controls.appendChild(prevButton);
@@ -166,7 +168,9 @@ function generateDays() {
       if (skipped < startBusinessDay) {
         skipped++;
       } else {
-        daysContainer.appendChild(createDayButton(date));
+        const dayButton = createDayButton(date);
+        dayButton.style.animationDelay = `${added * 35}ms`;
+        daysContainer.appendChild(dayButton);
         added++;
       }
     }
@@ -237,7 +241,7 @@ async function loadTimes(date) {
       return;
     }
 
-    times.forEach((item) => {
+    times.forEach((item, index) => {
       let time = item;
       let available = true;
       let reason = "Horário indisponível";
@@ -248,7 +252,9 @@ async function loadTimes(date) {
         reason = item.reason || reason;
       }
 
-      timesContainer.appendChild(createTimeButton(time, Boolean(time) && available, reason));
+      const button = createTimeButton(time, Boolean(time) && available, reason);
+      button.style.animationDelay = `${index * 30}ms`;
+      timesContainer.appendChild(button);
     });
   } catch (error) {
     setEmptyTimes("Erro ao carregar horários. Tente novamente.");
@@ -348,4 +354,35 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+/* Animações de entrada */
+
+function setupRevealAnimations() {
+  const elements = document.querySelectorAll(
+    ".section-text, .info-card, .services > .tag, .services > h2, .service-card, .booking-left, .booking-form, .footer"
+  );
+
+  elements.forEach((element) => {
+    element.classList.add("reveal");
+  });
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    {
+      threshold: 0.14
+    }
+  );
+
+  elements.forEach((element) => {
+    observer.observe(element);
+  });
+}
+
+setupRevealAnimations();
 generateDays();
