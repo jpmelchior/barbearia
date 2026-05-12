@@ -101,7 +101,7 @@
           <h3>Corte Masculino</h3>
 
           <p>
-            Corte moderno com acabamento profissional. A partir de R$ 35,00.
+            Corte moderno com acabamento profissional.
           </p>
         </div>
       </article>
@@ -120,7 +120,7 @@
           <h3>Barba</h3>
 
           <p>
-            Alinhamento, modelagem e acabamento. A partir de R$ 25,00.
+            Alinhamento, modelagem e acabamento.
           </p>
         </div>
       </article>
@@ -136,10 +136,10 @@
         />
 
         <div class="service-content">
-          <h3>Barba + Corte</h3>
+          <h3>Degradê</h3>
 
           <p>
-            Combo completo com corte, barba e acabamento. A partir de R$ 50,00.
+            Degradê limpo, sombreado e moderno.
           </p>
         </div>
       </article>
@@ -191,12 +191,19 @@
         />
       </div>
 
-      <div class="field full">
+      <div class="field full service-select-field">
         <label for="service">Serviço</label>
 
-        <select id="service" name="service" required>
-          <option value="">Carregando serviços...</option>
-        </select>
+        <input type="hidden" id="service" name="service" required />
+
+        <div
+          id="serviceOptions"
+          class="service-options"
+          role="listbox"
+          aria-label="Escolha um serviço"
+        >
+          <p class="service-loading">Carregando serviços...</p>
+        </div>
       </div>
 
       <div class="field full">
@@ -248,6 +255,6 @@
   </a>
 </footer>
 
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ const submitButton = form.querySelector(".submit-btn");
 const nameInput = document.getElementById("name");
 const phoneInput = document.getElementById("phone");
 const serviceInput = document.getElementById("service");
+const serviceOptions = document.getElementById("serviceOptions");
 const dateInput = document.getElementById("date");
 const timeInput = document.getElementById("time");
 
@@ -74,7 +75,14 @@ function setMessage(text, type = "") {
 }
 
 async function loadServices() {
-  serviceInput.innerHTML = '<option value="">Carregando serviços...</option>';
+  serviceInput.value = "";
+
+  if (!serviceOptions) {
+    setMessage("Erro interno: área de serviços não encontrada.", "error");
+    return;
+  }
+
+  serviceOptions.innerHTML = '<p class="service-loading">Carregando serviços...</p>';
 
   try {
     const response = await fetch(`${API_URL}/services`);
@@ -85,25 +93,54 @@ async function loadServices() {
 
     const services = await response.json();
 
-    serviceInput.innerHTML = '<option value="">Escolha um serviço</option>';
+    serviceOptions.innerHTML = "";
 
     if (!Array.isArray(services) || !services.length) {
-      serviceInput.innerHTML = '<option value="">Nenhum serviço disponível</option>';
+      serviceOptions.innerHTML = '<p class="service-loading">Nenhum serviço disponível</p>';
       return;
     }
 
     services.forEach((service) => {
-      const option = document.createElement("option");
+      const button = document.createElement("button");
 
-      option.value = service.name;
-      option.textContent = `${service.name} — ${service.price_label || "R$ 0,00"}`;
+      button.type = "button";
+      button.className = "service-option";
+      button.dataset.service = service.name;
+      button.setAttribute("role", "option");
+      button.setAttribute("aria-selected", "false");
+      button.setAttribute("aria-pressed", "false");
+      button.setAttribute(
+        "aria-label",
+        `Selecionar ${service.name}, ${service.price_label || "R$ 0,00"}`
+      );
 
-      serviceInput.appendChild(option);
+      button.innerHTML = `
+        <span class="service-option-name">${service.name}</span>
+        <strong class="service-option-price">${service.price_label || "R$ 0,00"}</strong>
+      `;
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".service-option").forEach((item) => {
+          item.classList.remove("active");
+          item.setAttribute("aria-selected", "false");
+          item.setAttribute("aria-pressed", "false");
+        });
+
+        button.classList.add("active");
+        button.setAttribute("aria-selected", "true");
+        button.setAttribute("aria-pressed", "true");
+
+        serviceInput.value = service.name;
+        setMessage("");
+      });
+
+      serviceOptions.appendChild(button);
     });
   } catch (error) {
     console.error("Erro ao carregar serviços:", error);
 
-    serviceInput.innerHTML = '<option value="">Erro ao carregar serviços</option>';
+    serviceInput.value = "";
+    serviceOptions.innerHTML = '<p class="service-loading error">Erro ao carregar serviços</p>';
     setMessage("Erro ao carregar serviços. Recarregue a página.", "error");
   }
 }
@@ -439,6 +476,13 @@ form.addEventListener("submit", async (event) => {
 
     form.reset();
 
+    serviceInput.value = "";
+    document.querySelectorAll(".service-option").forEach((item) => {
+      item.classList.remove("active");
+      item.setAttribute("aria-selected", "false");
+      item.setAttribute("aria-pressed", "false");
+    });
+
     dateInput.value = "";
     timeInput.value = "";
 
@@ -462,7 +506,7 @@ form.addEventListener("submit", async (event) => {
 
 function setupRevealAnimations() {
   const elements = document.querySelectorAll(
-    ".section-text, .info-card, .services > .tag, .services > h2, .service-card, .booking-left, .booking-form, .footer"
+    ".section-text, .info-card, .services > .tag, .services > h2, .service-card, .booking-left, .booking-form, .service-option, .footer"
   );
 
   elements.forEach((element) => {
