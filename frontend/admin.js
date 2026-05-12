@@ -35,9 +35,8 @@ const tabs = document.querySelectorAll(".tab");
 const perDayPageSize = 5;
 const dayPages = {};
 
-let authHeader = localStorage.getItem("adminAuth") || "";
-let savedUser = localStorage.getItem("adminUser") || "";
-let savedPassword = localStorage.getItem("adminPassword") || "";
+let authHeader = sessionStorage.getItem("adminAuth") || "";
+let savedUser = sessionStorage.getItem("adminUser") || "";
 
 let appointments = [];
 let blocks = [];
@@ -45,8 +44,27 @@ let blocks = [];
 let historyDate = "";
 let historyDateMode = "all";
 
+/*
+  Limpeza de dados antigos inseguros.
+  Versões anteriores salvavam senha no localStorage.
+  Agora a senha não deve ficar armazenada no navegador.
+*/
+localStorage.removeItem("adminAuth");
+localStorage.removeItem("adminPassword");
+
 adminUser.value = savedUser;
-adminPassword.value = savedPassword;
+adminPassword.value = "";
+
+adminPassword.setAttribute("autocomplete", "current-password");
+adminUser.setAttribute("autocomplete", "username");
+
+function clearAdminSession() {
+  authHeader = "";
+  sessionStorage.removeItem("adminAuth");
+  sessionStorage.removeItem("adminUser");
+  localStorage.removeItem("adminAuth");
+  localStorage.removeItem("adminPassword");
+}
 
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
@@ -62,8 +80,9 @@ function showLogin() {
   adminPanel.classList.add("hidden");
   loginBox.classList.remove("hidden");
 
-  adminUser.value = localStorage.getItem("adminUser") || adminUser.value;
-  adminPassword.value = localStorage.getItem("adminPassword") || adminPassword.value;
+  adminUser.value = sessionStorage.getItem("adminUser") || adminUser.value || "";
+  adminPassword.value = "";
+  adminPassword.focus();
 }
 
 function escapeHTML(value) {
@@ -203,7 +222,14 @@ async function adminFetch(url, options = {}) {
 }
 
 async function login(user, password) {
-  const token = btoa(`${user}:${password}`);
+  const cleanUser = String(user || "").trim();
+  const cleanPassword = String(password || "").trim();
+
+  if (!cleanUser || !cleanPassword) {
+    throw new Error("Informe usuário e senha.");
+  }
+
+  const token = btoa(`${cleanUser}:${cleanPassword}`);
   authHeader = `Basic ${token}`;
 
   const response = await fetch(`${API_URL}/admin/login`, {
@@ -214,14 +240,20 @@ async function login(user, password) {
   });
 
   if (!response.ok) {
-    authHeader = "";
-    localStorage.removeItem("adminAuth");
+    clearAdminSession();
     throw new Error("Usuário ou senha incorretos.");
   }
 
-  localStorage.setItem("adminAuth", authHeader);
-  localStorage.setItem("adminUser", user);
-  localStorage.setItem("adminPassword", password);
+  /*
+    Segurança:
+    - Não salvamos senha.
+    - Não salvamos credencial em localStorage.
+    - sessionStorage dura apenas durante a sessão do navegador.
+  */
+  sessionStorage.setItem("adminAuth", authHeader);
+  sessionStorage.setItem("adminUser", cleanUser);
+
+  adminPassword.value = "";
 }
 
 async function loadAll() {
@@ -239,8 +271,7 @@ async function loadAppointments() {
     const response = await adminFetch(`${API_URL}/admin/appointments`);
 
     if (response.status === 401) {
-      localStorage.removeItem("adminAuth");
-      authHeader = "";
+      clearAdminSession();
       showLogin();
       setLoginMessage("Faça login novamente.", "error");
       return;
@@ -249,8 +280,8 @@ async function loadAppointments() {
     const data = await response.json();
 
     if (!response.ok) {
-      appointmentsList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar horários."}</p>`;
-      completedList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar histórico."}</p>`;
+      appointmentsList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar horários.")}</p>`;
+      completedList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar histórico.")}</p>`;
       return;
     }
 
@@ -377,8 +408,8 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
 
       dayHeader.innerHTML = `
         <div class="day-title-area">
-          <strong>${formatDayHeader(date)}</strong>
-          <small>${formatFullDate(date)}</small>
+          <strong>${escapeHTML(formatDayHeader(date))}</strong>
+          <small>${escapeHTML(formatFullDate(date))}</small>
         </div>
 
         <div class="day-info-area">
@@ -415,7 +446,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
             <strong>${escapeHTML(item.phone)}</strong>
           </div>
 
-          <button class="cancel-btn" data-id="${item.id}">
+          <button class="cancel-btn" data-id="${escapeHTML(item.id)}">
             ${groupType === "completed" ? "Remover" : "Cancelar"}
           </button>
         `;
@@ -430,7 +461,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
         pagination.innerHTML = `
           <button 
             class="day-prev" 
-            data-page-key="${pageKey}" 
+            data-page-key="${escapeHTML(pageKey)}" 
             ${currentPage === 1 ? "disabled" : ""}
           >
             ← Anterior
@@ -440,7 +471,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
 
           <button 
             class="day-next" 
-            data-page-key="${pageKey}" 
+            data-page-key="${escapeHTML(pageKey)}" 
             data-total-pages="${totalPages}" 
             ${currentPage === totalPages ? "disabled" : ""}
           >
@@ -457,7 +488,10 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
   container.querySelectorAll(".cancel-btn").forEach((button) => {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
-      const actionText = groupType === "completed" ? "remover este registro" : "cancelar este agendamento";
+      const actionText =
+        groupType === "completed"
+          ? "remover este registro"
+          : "cancelar este agendamento";
 
       if (!confirm(`Deseja ${actionText}?`)) return;
 
@@ -496,6 +530,13 @@ async function cancelAppointment(id) {
       method: "DELETE"
     });
 
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
     if (!response.ok) {
       alert("Erro ao remover registro.");
       return;
@@ -521,6 +562,12 @@ async function clearCompletedHistory() {
 
   if (!confirmed) return;
 
+  const secondConfirm = confirm(
+    "Confirma novamente? Essa ação remove os registros atendidos do sistema."
+  );
+
+  if (!secondConfirm) return;
+
   try {
     const ids = completedAppointments.map((item) => item.id);
 
@@ -528,6 +575,13 @@ async function clearCompletedHistory() {
       const response = await adminFetch(`${API_URL}/admin/appointments/${id}`, {
         method: "DELETE"
       });
+
+      if (response.status === 401) {
+        clearAdminSession();
+        showLogin();
+        setLoginMessage("Faça login novamente.", "error");
+        return;
+      }
 
       if (!response.ok) {
         alert("Alguns registros não puderam ser removidos.");
@@ -560,8 +614,7 @@ async function loadBlocks() {
     const response = await adminFetch(`${API_URL}/admin/blocks`);
 
     if (response.status === 401) {
-      localStorage.removeItem("adminAuth");
-      authHeader = "";
+      clearAdminSession();
       showLogin();
       setLoginMessage("Faça login novamente.", "error");
       return;
@@ -570,7 +623,7 @@ async function loadBlocks() {
     const data = await response.json();
 
     if (!response.ok) {
-      blocksList.innerHTML = `<p class="empty error">${data.error || "Erro ao carregar bloqueios."}</p>`;
+      blocksList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar bloqueios.")}</p>`;
       return;
     }
 
@@ -602,12 +655,12 @@ function renderBlocks() {
       card.innerHTML = `
         <div>
           <small>Dia</small>
-          <strong>${formatDayHeader(block.date)}</strong>
+          <strong>${escapeHTML(formatDayHeader(block.date))}</strong>
         </div>
 
         <div>
           <small>Horário</small>
-          <strong>${formatTime(block.time)}</strong>
+          <strong>${escapeHTML(formatTime(block.time))}</strong>
         </div>
 
         <div>
@@ -615,7 +668,7 @@ function renderBlocks() {
           <strong>${escapeHTML(block.reason)}</strong>
         </div>
 
-        <button class="remove-block-btn" data-id="${block.id}">Remover</button>
+        <button class="remove-block-btn" data-id="${escapeHTML(block.id)}">Remover</button>
       `;
 
       blocksList.appendChild(card);
@@ -656,6 +709,13 @@ async function createBlock(event) {
 
     const data = await response.json();
 
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
     if (!response.ok) {
       alert(data.error || "Erro ao criar bloqueio.");
       return;
@@ -675,6 +735,13 @@ async function removeBlock(id) {
     const response = await adminFetch(`${API_URL}/admin/blocks/${id}`, {
       method: "DELETE"
     });
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
 
     if (!response.ok) {
       alert("Erro ao remover bloqueio.");
@@ -712,7 +779,7 @@ loginForm.addEventListener("submit", async (event) => {
   setLoginMessage("Entrando...");
 
   try {
-    await login(adminUser.value.trim(), adminPassword.value.trim());
+    await login(adminUser.value, adminPassword.value);
 
     setLoginMessage("");
     showPanel();
@@ -726,9 +793,12 @@ loginForm.addEventListener("submit", async (event) => {
 refreshBtn.addEventListener("click", loadAll);
 
 logoutBtn.addEventListener("click", () => {
-  authHeader = "";
-  localStorage.removeItem("adminAuth");
+  clearAdminSession();
+  appointments = [];
+  blocks = [];
+  adminPassword.value = "";
   showLogin();
+  setLoginMessage("Você saiu do painel.", "");
 });
 
 blockForm.addEventListener("submit", createBlock);
@@ -775,4 +845,6 @@ clearHistoryBtn.addEventListener("click", clearCompletedHistory);
 if (authHeader) {
   showPanel();
   loadAll();
+} else {
+  showLogin();
 }
