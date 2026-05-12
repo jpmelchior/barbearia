@@ -118,6 +118,10 @@
         <button type="button" class="tab" data-tab="completed">
           Histórico de clientes
         </button>
+
+        <button type="button" class="tab" data-tab="services">
+          Serviços e preços
+        </button>
       </nav>
 
       <div class="admin-grid">
@@ -234,6 +238,75 @@
               <p class="empty">Carregando histórico...</p>
             </div>
           </section>
+
+          <!-- SERVIÇOS -->
+          <section class="card hidden" id="servicesSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Serviços</span>
+                <h2>Serviços e preços</h2>
+              </div>
+
+              <p>
+                Cadastre, edite, ative ou desative os serviços que aparecem no site do cliente.
+              </p>
+            </div>
+
+            <form id="serviceForm" class="service-form">
+              <input type="hidden" id="serviceId" />
+
+              <label for="serviceName">
+                Nome do serviço
+                <input
+                  type="text"
+                  id="serviceName"
+                  placeholder="Ex: Corte Masculino"
+                  maxlength="80"
+                  required
+                />
+              </label>
+
+              <label for="servicePrice">
+                Preço
+                <input
+                  type="number"
+                  id="servicePrice"
+                  placeholder="35"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </label>
+
+              <label for="serviceActive" class="checkbox-label">
+                <input type="checkbox" id="serviceActive" checked />
+                Serviço ativo no site
+              </label>
+
+              <div class="service-form-actions">
+                <button type="submit" id="saveServiceBtn">
+                  Salvar serviço
+                </button>
+
+                <button type="button" id="cancelServiceEditBtn" class="secondary-btn hidden">
+                  Cancelar edição
+                </button>
+              </div>
+            </form>
+
+            <div class="info-box service-info-box">
+              <strong>Serviços iniciais</strong>
+              <p>
+                O sistema cria automaticamente: Corte Masculino R$ 35,00,
+                Barba R$ 25,00 e Barba + Corte R$ 50,00.
+              </p>
+            </div>
+
+            <div id="servicesList" class="services-admin-list">
+              <p class="empty">Carregando serviços...</p>
+            </div>
+          </section>
+
 
         </section>
 

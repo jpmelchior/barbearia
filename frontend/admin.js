@@ -13,6 +13,7 @@ const completedList = document.getElementById("completedList");
 
 const scheduledSection = document.getElementById("scheduledSection");
 const completedSection = document.getElementById("completedSection");
+const servicesSection = document.getElementById("servicesSection");
 
 const refreshBtn = document.getElementById("refreshBtn");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -35,6 +36,15 @@ const exportScheduledBtn = document.getElementById("exportScheduledBtn");
 const exportHistoryBtn = document.getElementById("exportHistoryBtn");
 const exportBlocksBtn = document.getElementById("exportBlocksBtn");
 
+const serviceForm = document.getElementById("serviceForm");
+const serviceIdInput = document.getElementById("serviceId");
+const serviceNameInput = document.getElementById("serviceName");
+const servicePriceInput = document.getElementById("servicePrice");
+const serviceActiveInput = document.getElementById("serviceActive");
+const saveServiceBtn = document.getElementById("saveServiceBtn");
+const cancelServiceEditBtn = document.getElementById("cancelServiceEditBtn");
+const servicesList = document.getElementById("servicesList");
+
 const tabs = document.querySelectorAll(".tab");
 
 const perDayPageSize = 5;
@@ -45,6 +55,7 @@ let savedUser = sessionStorage.getItem("adminUser") || "";
 
 let appointments = [];
 let blocks = [];
+let services = [];
 
 let historyDate = "";
 let historyDateMode = "all";
@@ -259,7 +270,8 @@ async function login(user, password) {
 async function loadAll() {
   await Promise.all([
     loadAppointments(),
-    loadBlocks()
+    loadBlocks(),
+    loadServices()
   ]);
 }
 
@@ -918,6 +930,208 @@ function exportBlocks() {
   );
 }
 
+
+async function loadServices() {
+  servicesList.innerHTML = `<p class="empty">Carregando serviços...</p>`;
+
+  try {
+    const response = await adminFetch(`${API_URL}/admin/services`);
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      servicesList.innerHTML = `<p class="empty error">${escapeHTML(data.error || "Erro ao carregar serviços.")}</p>`;
+      return;
+    }
+
+    services = Array.isArray(data) ? data : [];
+    renderServices();
+  } catch (error) {
+    servicesList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
+  }
+}
+
+function renderServices() {
+  servicesList.innerHTML = "";
+
+  if (!services.length) {
+    servicesList.innerHTML = `<p class="empty">Nenhum serviço cadastrado.</p>`;
+    return;
+  }
+
+  services.forEach((service) => {
+    const card = document.createElement("article");
+    card.className = `service-admin-card ${Number(service.active) ? "service-active" : "service-inactive"}`;
+
+    card.innerHTML = `
+      <div>
+        <small>Serviço</small>
+        <strong>${escapeHTML(service.name)}</strong>
+      </div>
+
+      <div>
+        <small>Preço</small>
+        <strong>${escapeHTML(service.price_label || formatMoney(service.price))}</strong>
+      </div>
+
+      <div>
+        <small>Status</small>
+        <strong>${Number(service.active) ? "Ativo" : "Inativo"}</strong>
+      </div>
+
+      <div class="service-card-actions">
+        <button type="button" class="secondary-btn edit-service-btn" data-id="${escapeHTML(service.id)}">
+          Editar
+        </button>
+
+        <button type="button" class="cancel-btn disable-service-btn" data-id="${escapeHTML(service.id)}">
+          Desativar
+        </button>
+      </div>
+    `;
+
+    servicesList.appendChild(card);
+  });
+
+  servicesList.querySelectorAll(".edit-service-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const service = services.find((item) => String(item.id) === String(button.dataset.id));
+
+      if (service) {
+        startServiceEdit(service);
+      }
+    });
+  });
+
+  servicesList.querySelectorAll(".disable-service-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const service = services.find((item) => String(item.id) === String(button.dataset.id));
+
+      if (!service) return;
+
+      if (!confirm(`Deseja desativar o serviço "${service.name}"?`)) {
+        return;
+      }
+
+      await disableService(service.id);
+    });
+  });
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+function startServiceEdit(service) {
+  serviceIdInput.value = service.id;
+  serviceNameInput.value = service.name;
+  servicePriceInput.value = Number(service.price || 0).toFixed(2);
+  serviceActiveInput.checked = Number(service.active) === 1;
+  saveServiceBtn.textContent = "Atualizar serviço";
+  cancelServiceEditBtn.classList.remove("hidden");
+  serviceNameInput.focus();
+}
+
+function resetServiceForm() {
+  serviceForm.reset();
+  serviceIdInput.value = "";
+  serviceActiveInput.checked = true;
+  saveServiceBtn.textContent = "Salvar serviço";
+  cancelServiceEditBtn.classList.add("hidden");
+}
+
+async function saveService(event) {
+  event.preventDefault();
+
+  const id = serviceIdInput.value;
+  const name = serviceNameInput.value.trim();
+  const price = servicePriceInput.value;
+  const active = serviceActiveInput.checked ? 1 : 0;
+
+  if (!name || name.length < 2) {
+    alert("Informe o nome do serviço.");
+    return;
+  }
+
+  if (price === "" || Number(price) < 0) {
+    alert("Informe um preço válido.");
+    return;
+  }
+
+  const isEditing = Boolean(id);
+  const url = isEditing
+    ? `${API_URL}/admin/services/${id}`
+    : `${API_URL}/admin/services`;
+
+  try {
+    const response = await adminFetch(url, {
+      method: isEditing ? "PATCH" : "POST",
+      body: JSON.stringify({
+        name,
+        price,
+        active
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      alert(data.error || "Erro ao salvar serviço.");
+      return;
+    }
+
+    resetServiceForm();
+    await loadServices();
+    alert(data.message || "Serviço salvo com sucesso.");
+  } catch (error) {
+    alert("Erro ao conectar ao servidor.");
+  }
+}
+
+async function disableService(id) {
+  try {
+    const response = await adminFetch(`${API_URL}/admin/services/${id}`, {
+      method: "DELETE"
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      clearAdminSession();
+      showLogin();
+      setLoginMessage("Faça login novamente.", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      alert(data.error || "Erro ao desativar serviço.");
+      return;
+    }
+
+    await loadServices();
+    alert(data.message || "Serviço desativado com sucesso.");
+  } catch (error) {
+    alert("Erro ao conectar ao servidor.");
+  }
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     tabs.forEach((item) => item.classList.remove("active"));
@@ -928,11 +1142,19 @@ tabs.forEach((tab) => {
     if (selectedTab === "scheduled") {
       scheduledSection.classList.remove("hidden");
       completedSection.classList.add("hidden");
+      servicesSection.classList.add("hidden");
     }
 
     if (selectedTab === "completed") {
       completedSection.classList.remove("hidden");
       scheduledSection.classList.add("hidden");
+      servicesSection.classList.add("hidden");
+    }
+
+    if (selectedTab === "services") {
+      servicesSection.classList.remove("hidden");
+      scheduledSection.classList.add("hidden");
+      completedSection.classList.add("hidden");
     }
   });
 });
@@ -960,6 +1182,7 @@ logoutBtn.addEventListener("click", () => {
   clearAdminSession();
   appointments = [];
   blocks = [];
+  services = [];
   adminPassword.value = "";
   showLogin();
   setLoginMessage("Você saiu do painel.", "");
@@ -1008,6 +1231,8 @@ clearHistoryBtn.addEventListener("click", clearCompletedHistory);
 exportScheduledBtn.addEventListener("click", exportScheduledAppointments);
 exportHistoryBtn.addEventListener("click", exportHistoryAppointments);
 exportBlocksBtn.addEventListener("click", exportBlocks);
+serviceForm.addEventListener("submit", saveService);
+cancelServiceEditBtn.addEventListener("click", resetServiceForm);
 
 if (authHeader) {
   showPanel();

@@ -137,6 +137,32 @@ async function migrateAppointmentsTableIfNeeded() {
   }
 }
 
+async function seedDefaultServices() {
+  const total = await get("SELECT COUNT(*) AS total FROM services");
+
+  if (total && total.total > 0) {
+    return;
+  }
+
+  const defaultServices = [
+    ["Corte Masculino", 35],
+    ["Barba", 25],
+    ["Barba + Corte", 50]
+  ];
+
+  for (const [name, price] of defaultServices) {
+    await run(
+      `
+      INSERT INTO services (name, price, active)
+      VALUES (?, ?, 1)
+      `,
+      [name, price]
+    );
+  }
+
+  console.log("Serviços padrão cadastrados.");
+}
+
 async function initializeDatabase() {
   try {
     await run("PRAGMA journal_mode = WAL");
@@ -170,6 +196,17 @@ async function initializeDatabase() {
       )
     `);
 
+    await run(`
+      CREATE TABLE IF NOT EXISTS services (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        price REAL NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     await addColumnIfNotExists(
       "appointments",
       "status",
@@ -177,9 +214,7 @@ async function initializeDatabase() {
     );
 
     await addColumnIfNotExists("appointments", "ip", "TEXT");
-
     await addColumnIfNotExists("appointments", "device_id", "TEXT");
-
     await addColumnIfNotExists("appointments", "user_agent", "TEXT");
 
     await addColumnIfNotExists(
@@ -188,7 +223,26 @@ async function initializeDatabase() {
       "DATETIME DEFAULT CURRENT_TIMESTAMP"
     );
 
+    await addColumnIfNotExists(
+      "services",
+      "price",
+      "REAL NOT NULL DEFAULT 0"
+    );
+
+    await addColumnIfNotExists(
+      "services",
+      "active",
+      "INTEGER NOT NULL DEFAULT 1"
+    );
+
+    await addColumnIfNotExists(
+      "services",
+      "updated_at",
+      "DATETIME DEFAULT CURRENT_TIMESTAMP"
+    );
+
     await migrateAppointmentsTableIfNeeded();
+    await seedDefaultServices();
 
     await run(`
       CREATE INDEX IF NOT EXISTS idx_appointments_date_time
@@ -224,6 +278,11 @@ async function initializeDatabase() {
     await run(`
       CREATE INDEX IF NOT EXISTS idx_blocked_times_date_time
       ON blocked_times(date, time)
+    `);
+
+    await run(`
+      CREATE INDEX IF NOT EXISTS idx_services_active
+      ON services(active)
     `);
 
     console.log("Banco de dados inicializado com sucesso.");

@@ -57,12 +57,6 @@ if (OPENING_HOUR >= CLOSING_HOUR) {
   process.exit(1);
 }
 
-const ALLOWED_SERVICES = new Set([
-  "Corte Masculino",
-  "Barba",
-  "Corte + Barba",
-  "Degradê"
-]);
 
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
   .split(",")
@@ -231,6 +225,40 @@ function getClientIp(req) {
 
 function getUserAgent(req) {
   return normalizeText(req.headers["user-agent"], 255);
+}
+
+function normalizePrice(value) {
+  const number = Number(
+    String(value || "")
+      .replace(",", ".")
+      .replace(/[^\d.]/g, "")
+  );
+
+  if (!Number.isFinite(number) || number < 0) {
+    return null;
+  }
+
+  return Math.round(number * 100) / 100;
+}
+
+function formatServicePrice(price) {
+  return Number(price || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+async function getActiveServiceByName(name) {
+  return dbGet(
+    `
+    SELECT id, name, price, active
+    FROM services
+    WHERE name = ?
+    AND active = 1
+    LIMIT 1
+    `,
+    [name]
+  );
 }
 
 function isValidDateString(dateString) {
@@ -420,9 +448,6 @@ function validateAppointmentPayload(body) {
 
   appointment.phone = phoneDigits;
 
-  if (!ALLOWED_SERVICES.has(appointment.service)) {
-    return { error: "Serviço inválido." };
-  }
 
   const dateError = validateBusinessDate(appointment.date);
 
@@ -572,6 +597,178 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/api/services", async (req, res) => {
+  try {
+    const services = await dbAll(
+      `
+      SELECT id, name, price, active
+      FROM services
+      WHERE active = 1
+      ORDER BY name ASC
+      `
+    );
+
+    res.json(
+      services.map((service) => ({
+        ...service,
+        price_label: formatServicePrice(service.price)
+      }))
+    );
+  } catch (error) {
+    console.error("Erro em GET /api/services:", error);
+    res.status(500).json({ error: "Erro ao listar serviços." });
+  }
+});
+
+app.get("/api/admin/services", adminAuth, async (req, res) => {
+  try {
+    const services = await dbAll(
+      `
+      SELECT id, name, price, active, created_at, updated_at
+      FROM services
+      ORDER BY active DESC, name ASC
+      `
+    );
+
+    res.json(
+      services.map((service) => ({
+        ...service,
+        price_label: formatServicePrice(service.price)
+      }))
+    );
+  } catch (error) {
+    console.error("Erro em GET /api/admin/services:", error);
+    res.status(500).json({ error: "Erro ao listar serviços." });
+  }
+});
+
+app.post("/api/admin/services", adminAuth, async (req, res) => {
+  const name = normalizeText(req.body.name, 80);
+  const price = normalizePrice(req.body.price);
+
+  if (!name || name.length < 2) {
+    return res.status(400).json({ error: "Informe o nome do serviço." });
+  }
+
+  if (price === null) {
+    return res.status(400).json({ error: "Informe um preço válido." });
+  }
+
+  try {
+    const result = await dbRun(
+      `
+      INSERT INTO services (name, price, active)
+      VALUES (?, ?, 1)
+      `,
+      [name, price]
+    );
+
+    res.status(201).json({
+      message: "Serviço criado com sucesso.",
+      service: {
+        id: result.lastID,
+        name,
+        price,
+        active: 1,
+        price_label: formatServicePrice(price)
+      }
+    });
+  } catch (error) {
+    if (error.message && error.message.includes("UNIQUE")) {
+      return res.status(409).json({
+        error: "Já existe um serviço com esse nome."
+      });
+    }
+
+    console.error("Erro em POST /api/admin/services:", error);
+    res.status(500).json({ error: "Erro ao criar serviço." });
+  }
+});
+
+app.patch("/api/admin/services/:id", adminAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  const name = normalizeText(req.body.name, 80);
+  const price = normalizePrice(req.body.price);
+  const active =
+    req.body.active === true ||
+    req.body.active === 1 ||
+    req.body.active === "1"
+      ? 1
+      : 0;
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: "Serviço inválido." });
+  }
+
+  if (!name || name.length < 2) {
+    return res.status(400).json({ error: "Informe o nome do serviço." });
+  }
+
+  if (price === null) {
+    return res.status(400).json({ error: "Informe um preço válido." });
+  }
+
+  try {
+    const result = await dbRun(
+      `
+      UPDATE services
+      SET name = ?,
+          price = ?,
+          active = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [name, price, active, id]
+    );
+
+    if (!result.changes) {
+      return res.status(404).json({ error: "Serviço não encontrado." });
+    }
+
+    res.json({
+      message: "Serviço atualizado com sucesso."
+    });
+  } catch (error) {
+    if (error.message && error.message.includes("UNIQUE")) {
+      return res.status(409).json({
+        error: "Já existe um serviço com esse nome."
+      });
+    }
+
+    console.error("Erro em PATCH /api/admin/services/:id:", error);
+    res.status(500).json({ error: "Erro ao atualizar serviço." });
+  }
+});
+
+app.delete("/api/admin/services/:id", adminAuth, async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: "Serviço inválido." });
+  }
+
+  try {
+    const result = await dbRun(
+      `
+      UPDATE services
+      SET active = 0,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+    if (!result.changes) {
+      return res.status(404).json({ error: "Serviço não encontrado." });
+    }
+
+    res.json({ message: "Serviço desativado com sucesso." });
+  } catch (error) {
+    console.error("Erro em DELETE /api/admin/services/:id:", error);
+    res.status(500).json({ error: "Erro ao desativar serviço." });
+  }
+});
+
 app.get("/api/today", (req, res) => {
   res.json({
     date: getTodayBrazilDate(),
@@ -713,6 +910,14 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
   };
 
   try {
+    const selectedService = await getActiveServiceByName(appointment.service);
+
+    if (!selectedService) {
+      return res.status(400).json({
+        error: "Serviço inválido ou indisponível."
+      });
+    }
+
     const blocks = await dbAll(
       "SELECT time, reason FROM blocked_times WHERE date = ?",
       [appointment.date]

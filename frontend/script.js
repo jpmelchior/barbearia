@@ -73,6 +73,37 @@ function setMessage(text, type = "") {
   message.className = type;
 }
 
+async function loadServices() {
+  serviceInput.innerHTML = '<option value="">Carregando serviços...</option>';
+
+  try {
+    const response = await fetch(`${API_URL}/services`);
+
+    if (!response.ok) {
+      throw new Error("Erro ao buscar serviços.");
+    }
+
+    const services = await response.json();
+
+    serviceInput.innerHTML = '<option value="">Escolha um serviço</option>';
+
+    if (!Array.isArray(services) || !services.length) {
+      serviceInput.innerHTML = '<option value="">Nenhum serviço disponível</option>';
+      return;
+    }
+
+    services.forEach((service) => {
+      const option = document.createElement("option");
+      option.value = service.name;
+      option.textContent = `${service.name} — ${service.price_label || "R$ 0,00"}`;
+      serviceInput.appendChild(option);
+    });
+  } catch (error) {
+    serviceInput.innerHTML = '<option value="">Erro ao carregar serviços</option>';
+    setMessage("Erro ao carregar serviços. Recarregue a página.", "error");
+  }
+}
+
 function setEmptyTimes(text) {
   timesContainer.innerHTML = "";
 

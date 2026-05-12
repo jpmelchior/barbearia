@@ -490,7 +490,7 @@ select {
   width: calc(100% - 48px);
 
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 
   padding: 24px 0 0;
@@ -1198,6 +1198,141 @@ select {
   }
 
   .export-btn {
+    width: 100%;
+  }
+}
+
+/* SERVIÇOS ADMIN */
+
+.service-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(160px, 0.5fr);
+  gap: 16px;
+  align-items: end;
+
+  margin-bottom: 20px;
+  padding: 22px;
+
+  background: rgba(8, 8, 10, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: var(--radius);
+}
+
+.checkbox-label {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+
+  background: rgba(8, 8, 10, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  accent-color: var(--red2);
+  box-shadow: none;
+}
+
+.service-form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.services-admin-list {
+  display: grid;
+  gap: 14px;
+}
+
+.service-admin-card {
+  display: grid;
+  grid-template-columns: 1.35fr 0.7fr 0.7fr auto;
+  gap: 14px;
+  align-items: center;
+
+  padding: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-left: 5px solid var(--success);
+  border-radius: 18px;
+}
+
+.service-admin-card.service-inactive {
+  opacity: 0.65;
+  border-left-color: var(--danger);
+}
+
+.service-admin-card small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted2);
+  font-size: 0.67rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.service-admin-card strong {
+  display: block;
+  color: var(--white);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.service-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.service-card-actions button {
+  min-height: 42px;
+  padding: 10px 14px;
+}
+
+.service-info-box {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1180px) {
+  .service-admin-card {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .service-card-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .service-card-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .service-form,
+  .service-admin-card {
+    grid-template-columns: 1fr;
+  }
+
+  .service-form-actions,
+  .service-form-actions button,
+  .service-card-actions,
+  .service-card-actions button {
     width: 100%;
   }
 }
