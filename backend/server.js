@@ -1,19 +1,52 @@
 // backend/server.js
 
+require("dotenv").config();
+
 const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const db = require("./database");
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 const TIME_ZONE = "America/Sao_Paulo";
 
 const OPENING_HOUR = Number(process.env.OPENING_HOUR || 8);
 const CLOSING_HOUR = Number(process.env.CLOSING_HOUR || 20);
 
-const ADMIN_USER = process.env.ADMIN_USER || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_USER || !ADMIN_PASSWORD) {
+  console.error("ERRO: ADMIN_USER e ADMIN_PASSWORD são obrigatórios.");
+  console.error("Configure essas variáveis no Render ou no arquivo backend/.env local.");
+  process.exit(1);
+}
+
+if (ADMIN_USER === "admin" || ADMIN_PASSWORD === "123456") {
+  console.error("ERRO: não use ADMIN_USER=admin nem ADMIN_PASSWORD=123456.");
+  console.error("Defina credenciais fortes nas variáveis de ambiente.");
+  process.exit(1);
+}
+
+if (!Number.isInteger(OPENING_HOUR) || !Number.isInteger(CLOSING_HOUR)) {
+  console.error("ERRO: OPENING_HOUR e CLOSING_HOUR devem ser números inteiros.");
+  process.exit(1);
+}
+
+if (OPENING_HOUR < 0 || OPENING_HOUR > 23 || CLOSING_HOUR < 1 || CLOSING_HOUR > 24) {
+  console.error("ERRO: horário de funcionamento inválido.");
+  process.exit(1);
+}
+
+if (OPENING_HOUR >= CLOSING_HOUR) {
+  console.error("ERRO: OPENING_HOUR precisa ser menor que CLOSING_HOUR.");
+  process.exit(1);
+}
 
 const ALLOWED_SERVICES = new Set([
   "Corte Masculino",
@@ -27,22 +60,64 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+if (NODE_ENV === "production" && allowedOrigins.length === 0) {
+  console.error("ERRO: FRONTEND_ORIGIN é obrigatório em produção.");
+  console.error("Exemplo: FRONTEND_ORIGIN=https://barbearia-sigma-henna.vercel.app");
+  process.exit(1);
+}
+
 const corsOptions = allowedOrigins.length
   ? {
       origin(origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-          return;
+          return callback(null, true);
         }
 
-        callback(new Error("Origem não permitida pelo CORS."));
-      }
+        return callback(new Error("Origem não permitida pelo CORS."));
+      },
+      methods: ["GET", "POST", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: false
     }
   : {};
 
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas requisições. Tente novamente em alguns minutos."
+  }
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas tentativas de login. Tente novamente em alguns minutos."
+  }
+});
+
+const appointmentLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Limite de tentativas de agendamento atingido. Tente novamente amanhã."
+  }
+});
+
+app.set("trust proxy", 1);
 app.disable("x-powered-by");
+
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "20kb" }));
+app.use(generalLimiter);
 
 function dbAll(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -107,7 +182,7 @@ function adminAuth(req, res, next) {
 
     next();
   } catch (error) {
-    res.status(401).json({ error: "Login inválido." });
+    return res.status(401).json({ error: "Login inválido." });
   }
 }
 
@@ -259,8 +334,12 @@ function validateAppointmentPayload(body) {
     return { error: "Preencha todos os campos." };
   }
 
-  if (appointment.name.length < 2) {
+  if (appointment.name.length < 3) {
     return { error: "Informe um nome válido." };
+  }
+
+  if (!/^[A-Za-zÀ-ÿ\s'.-]{3,80}$/.test(appointment.name)) {
+    return { error: "O nome deve conter apenas letras e espaços." };
   }
 
   const phoneDigits = onlyDigits(appointment.phone);
@@ -268,6 +347,8 @@ function validateAppointmentPayload(body) {
   if (phoneDigits.length < 10 || phoneDigits.length > 11) {
     return { error: "Informe um WhatsApp válido com DDD." };
   }
+
+  appointment.phone = phoneDigits;
 
   if (!ALLOWED_SERVICES.has(appointment.service)) {
     return { error: "Serviço inválido." };
@@ -328,6 +409,7 @@ function validateBlockPayload(body) {
 app.get("/", (req, res) => {
   res.json({
     message: "API da barbearia funcionando",
+    environment: NODE_ENV,
     todayBrazil: getTodayBrazilDate(),
     hourBrazil: getBrazilHour(),
     openingHours: {
@@ -401,10 +483,12 @@ app.get("/api/times", async (req, res) => {
 
   try {
     const allTimes = generateTimes(date);
+
     const appointments = await dbAll(
       "SELECT time FROM appointments WHERE date = ?",
       [date]
     );
+
     const blocks = await dbAll(
       "SELECT time, reason FROM blocked_times WHERE date = ?",
       [date]
@@ -454,11 +538,12 @@ app.get("/api/times", async (req, res) => {
       times
     });
   } catch (error) {
+    console.error("Erro em GET /api/times:", error);
     res.status(500).json({ error: "Erro ao buscar horários." });
   }
 });
 
-app.post("/api/appointments", async (req, res) => {
+app.post("/api/appointments", appointmentLimiter, async (req, res) => {
   const { appointment, error } = validateAppointmentPayload(req.body);
 
   if (error) {
@@ -515,6 +600,8 @@ app.post("/api/appointments", async (req, res) => {
       });
     }
 
+    console.error("Erro em POST /api/appointments:", error);
+
     res.status(500).json({
       error: "Erro ao criar agendamento."
     });
@@ -529,6 +616,7 @@ app.get("/api/admin/appointments", adminAuth, async (req, res) => {
 
     res.json(rows);
   } catch (error) {
+    console.error("Erro em GET /api/admin/appointments:", error);
     res.status(500).json({ error: "Erro ao listar agendamentos." });
   }
 });
@@ -549,6 +637,7 @@ app.delete("/api/admin/appointments/:id", adminAuth, async (req, res) => {
 
     res.json({ message: "Agendamento cancelado com sucesso." });
   } catch (error) {
+    console.error("Erro em DELETE /api/admin/appointments/:id:", error);
     res.status(500).json({ error: "Erro ao cancelar agendamento." });
   }
 });
@@ -561,6 +650,7 @@ app.get("/api/admin/blocks", adminAuth, async (req, res) => {
 
     res.json(rows);
   } catch (error) {
+    console.error("Erro em GET /api/admin/blocks:", error);
     res.status(500).json({ error: "Erro ao listar bloqueios." });
   }
 });
@@ -603,6 +693,7 @@ app.post("/api/admin/blocks", adminAuth, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error("Erro em POST /api/admin/blocks:", error);
     res.status(500).json({ error: "Erro ao criar bloqueio." });
   }
 });
@@ -623,11 +714,12 @@ app.delete("/api/admin/blocks/:id", adminAuth, async (req, res) => {
 
     res.json({ message: "Bloqueio removido com sucesso." });
   } catch (error) {
+    console.error("Erro em DELETE /api/admin/blocks/:id:", error);
     res.status(500).json({ error: "Erro ao remover bloqueio." });
   }
 });
 
-app.post("/api/admin/login", adminAuth, (req, res) => {
+app.post("/api/admin/login", loginLimiter, adminAuth, (req, res) => {
   res.json({ message: "Login realizado com sucesso." });
 });
 
@@ -640,11 +732,13 @@ app.use((err, req, res, next) => {
     return res.status(403).json({ error: err.message });
   }
 
+  console.error("Erro interno:", err);
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
 const server = app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Ambiente: ${NODE_ENV}`);
 });
 
 function shutdown() {
