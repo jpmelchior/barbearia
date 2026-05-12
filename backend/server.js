@@ -16,11 +16,9 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 const TIME_ZONE = "America/Sao_Paulo";
 
-const OPENING_HOUR = Number(process.env.OPENING_HOUR || 8);
-const CLOSING_HOUR = Number(process.env.CLOSING_HOUR || 20);
-
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
 
@@ -34,38 +32,17 @@ if (!ADMIN_USER || !ADMIN_PASSWORD) {
   process.exit(1);
 }
 
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  console.error("ERRO: JWT_SECRET é obrigatório e precisa ter pelo menos 32 caracteres.");
-  console.error("Configure JWT_SECRET no Render ou no arquivo backend/.env local.");
-  process.exit(1);
-}
-
 if (ADMIN_USER === "admin" || ADMIN_PASSWORD === "123456") {
   console.error("ERRO: não use ADMIN_USER=admin nem ADMIN_PASSWORD=123456.");
   console.error("Defina credenciais fortes nas variáveis de ambiente.");
   process.exit(1);
 }
 
-if (!Number.isInteger(OPENING_HOUR) || !Number.isInteger(CLOSING_HOUR)) {
-  console.error("ERRO: OPENING_HOUR e CLOSING_HOUR devem ser números inteiros.");
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error("ERRO: JWT_SECRET é obrigatório e precisa ter pelo menos 32 caracteres.");
+  console.error("Configure JWT_SECRET no Render ou no arquivo backend/.env local.");
   process.exit(1);
 }
-
-if (
-  OPENING_HOUR < 0 ||
-  OPENING_HOUR > 23 ||
-  CLOSING_HOUR < 1 ||
-  CLOSING_HOUR > 24
-) {
-  console.error("ERRO: horário de funcionamento inválido.");
-  process.exit(1);
-}
-
-if (OPENING_HOUR >= CLOSING_HOUR) {
-  console.error("ERRO: OPENING_HOUR precisa ser menor que CLOSING_HOUR.");
-  process.exit(1);
-}
-
 
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
   .split(",")
@@ -169,23 +146,6 @@ function safeCompare(value, expected) {
   return crypto.timingSafeEqual(valueBuffer, expectedBuffer);
 }
 
-function validateAdminCredentials(user, password) {
-  return safeCompare(user, ADMIN_USER) && safeCompare(password, ADMIN_PASSWORD);
-}
-
-function createAdminToken(user) {
-  return jwt.sign(
-    {
-      role: "admin",
-      user
-    },
-    JWT_SECRET,
-    {
-      expiresIn: JWT_EXPIRES_IN
-    }
-  );
-}
-
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
 
@@ -200,13 +160,13 @@ function adminAuth(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (!payload || payload.role !== "admin") {
+    if (!decoded || decoded.role !== "admin") {
       return res.status(401).json({ error: "Token inválido." });
     }
 
-    req.admin = payload;
+    req.admin = decoded;
     next();
   } catch (error) {
     return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
@@ -355,11 +315,6 @@ function getWeekdayFromDateString(dateString) {
   return parseDateString(dateString).getUTCDay();
 }
 
-function isWeekday(dateString) {
-  const weekday = getWeekdayFromDateString(dateString);
-  return weekday !== null && weekday >= 1 && weekday <= 5;
-}
-
 function formatWeekday(date) {
   return new Intl.DateTimeFormat("pt-BR", {
     weekday: "short",
@@ -471,7 +426,6 @@ async function getDatesBetween(startDateString, endDateString) {
   const dates = [];
   const startDate = parseDateString(startDateString);
   const endDate = parseDateString(endDateString);
-
   const currentDate = new Date(startDate);
 
   while (currentDate <= endDate) {
@@ -511,7 +465,7 @@ function validateAppointmentPayload(body) {
   const appointment = {
     name: normalizeText(body.name, 80),
     phone: normalizeText(body.phone, 20),
-    service: normalizeText(body.service, 40),
+    service: normalizeText(body.service, 80),
     date: normalizeText(body.date, 10),
     time: normalizeText(body.time, 5),
     device_id: normalizeDeviceId(body.device_id || body.deviceId)
@@ -542,7 +496,6 @@ function validateAppointmentPayload(body) {
   }
 
   appointment.phone = phoneDigits;
-
 
   if (!isValidTimeString(appointment.time)) {
     return { error: "Informe um horário válido." };
@@ -587,18 +540,12 @@ async function validateBlockPayload(body) {
   }
 
   if (block.time) {
-    const invalidTimeDate = [];
-
     for (const date of dates) {
       if (!(await isBusinessTimeSlot(date, block.time))) {
-        invalidTimeDate.push(date);
+        return {
+          error: "Informe um horário cheio dentro do funcionamento dos dias selecionados."
+        };
       }
-    }
-
-    if (invalidTimeDate.length) {
-      return {
-        error: "Informe um horário cheio dentro do funcionamento dos dias selecionados."
-      };
     }
   }
 
@@ -617,6 +564,7 @@ async function validateBlockPayload(body) {
 
 async function validateBusinessHoursPayload(body) {
   const weekday = Number(body.weekday);
+
   const isOpen =
     body.is_open === true ||
     body.is_open === 1 ||
@@ -710,16 +658,95 @@ async function validateAntiAbuseRules(appointment, metadata) {
   return null;
 }
 
+app.get("/api/health", async (req, res) => {
+  try {
+    const dbCheck = await dbGet("SELECT 1 AS ok");
+
+    const tables = {
+      appointments: 0,
+      blocked_times: 0,
+      services: 0,
+      business_hours: 0
+    };
+
+    try {
+      const appointmentsCount = await dbGet("SELECT COUNT(*) AS total FROM appointments");
+      const blocksCount = await dbGet("SELECT COUNT(*) AS total FROM blocked_times");
+      const servicesCount = await dbGet("SELECT COUNT(*) AS total FROM services");
+      const businessHoursCount = await dbGet("SELECT COUNT(*) AS total FROM business_hours");
+
+      tables.appointments = appointmentsCount?.total || 0;
+      tables.blocked_times = blocksCount?.total || 0;
+      tables.services = servicesCount?.total || 0;
+      tables.business_hours = businessHoursCount?.total || 0;
+    } catch (tableError) {
+      console.error("Erro ao contar tabelas no health check:", tableError.message);
+    }
+
+    res.json({
+      status: "ok",
+      api: "online",
+      database: dbCheck?.ok === 1 ? "connected" : "unknown",
+      environment: NODE_ENV,
+      timezone: TIME_ZONE,
+      todayBrazil: getTodayBrazilDate(),
+      hourBrazil: getBrazilHour(),
+      jwtConfigured: Boolean(JWT_SECRET && JWT_SECRET.length >= 32),
+      frontendOriginConfigured: Boolean(process.env.FRONTEND_ORIGIN),
+      tables,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Erro em GET /api/health:", error);
+
+    res.status(500).json({
+      status: "error",
+      api: "online",
+      database: "error",
+      environment: NODE_ENV,
+      timezone: TIME_ZONE,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.get("/", (req, res) => {
   res.json({
     message: "API da barbearia funcionando",
     environment: NODE_ENV,
     todayBrazil: getTodayBrazilDate(),
     hourBrazil: getBrazilHour(),
-    openingHours: {
-      open: `${String(OPENING_HOUR).padStart(2, "0")}:00`,
-      close: `${String(CLOSING_HOUR).padStart(2, "0")}:00`
+    jwtConfigured: Boolean(JWT_SECRET && JWT_SECRET.length >= 32)
+  });
+});
+
+app.post("/api/admin/login", loginLimiter, (req, res) => {
+  const user = normalizeText(req.body.user || req.body.username, 80);
+  const password = normalizeText(req.body.password, 120);
+
+  if (!user || !password) {
+    return res.status(400).json({ error: "Informe usuário e senha." });
+  }
+
+  if (!safeCompare(user, ADMIN_USER) || !safeCompare(password, ADMIN_PASSWORD)) {
+    return res.status(401).json({ error: "Usuário ou senha incorretos." });
+  }
+
+  const token = jwt.sign(
+    {
+      role: "admin",
+      user
+    },
+    JWT_SECRET,
+    {
+      expiresIn: JWT_EXPIRES_IN
     }
+  );
+
+  res.json({
+    message: "Login realizado com sucesso.",
+    token,
+    expiresIn: JWT_EXPIRES_IN
   });
 });
 
@@ -815,6 +842,7 @@ app.patch("/api/admin/services/:id", adminAuth, async (req, res) => {
   const id = Number(req.params.id);
   const name = normalizeText(req.body.name, 80);
   const price = normalizePrice(req.body.price);
+
   const active =
     req.body.active === true ||
     req.body.active === 1 ||
@@ -895,8 +923,6 @@ app.delete("/api/admin/services/:id", adminAuth, async (req, res) => {
   }
 });
 
-
-
 app.get("/api/business-hours", async (req, res) => {
   try {
     const rows = await dbAll(
@@ -932,12 +958,12 @@ app.get("/api/admin/business-hours", adminAuth, async (req, res) => {
 });
 
 app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
-  const payload = {
-    ...req.body,
-    weekday: req.params.weekday
-  };
+  const weekday = Number(req.params.weekday);
 
-  const { businessHour, error } = await validateBusinessHoursPayload(payload);
+  const { businessHour, error } = await validateBusinessHoursPayload({
+    ...req.body,
+    weekday
+  });
 
   if (error) {
     return res.status(400).json({ error });
@@ -962,7 +988,7 @@ app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
     );
 
     if (!result.changes) {
-      return res.status(404).json({ error: "Dia de funcionamento não encontrado." });
+      return res.status(404).json({ error: "Dia da semana não encontrado." });
     }
 
     res.json({ message: "Funcionamento atualizado com sucesso." });
@@ -973,7 +999,7 @@ app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
 });
 
 app.put("/api/admin/business-hours", adminAuth, async (req, res) => {
-  const items = Array.isArray(req.body.hours) ? req.body.hours : [];
+  const items = Array.isArray(req.body) ? req.body : Array.isArray(req.body.hours) ? req.body.hours : [];
 
   if (!items.length) {
     return res.status(400).json({ error: "Envie os horários da semana." });
@@ -1152,10 +1178,8 @@ app.get("/api/times", async (req, res) => {
 
     res.json({
       date,
-      business_hours: {
-        open_time: hours.open_time,
-        close_time: hours.close_time
-      },
+      open_time: hours.open_time,
+      close_time: hours.close_time,
       times
     });
   } catch (error) {
@@ -1177,18 +1201,18 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
   };
 
   try {
+    const dateError = await validateBusinessDate(appointment.date);
+
+    if (dateError) {
+      return res.status(400).json({ error: dateError });
+    }
+
     const selectedService = await getActiveServiceByName(appointment.service);
 
     if (!selectedService) {
       return res.status(400).json({
         error: "Serviço inválido ou indisponível."
       });
-    }
-
-    const dateError = await validateBusinessDate(appointment.date);
-
-    if (dateError) {
-      return res.status(400).json({ error: dateError });
     }
 
     const availableTimes = await generateTimes(appointment.date);
@@ -1259,7 +1283,6 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     }
 
     console.error("Erro em POST /api/appointments:", error);
-
     res.status(500).json({
       error: "Erro ao criar agendamento."
     });
@@ -1366,6 +1389,14 @@ app.patch("/api/admin/appointments/:id/status", adminAuth, async (req, res) => {
       if (conflict) {
         return res.status(409).json({
           error: "Não foi possível restaurar. Esse horário já está ocupado."
+        });
+      }
+
+      const availableTimes = await generateTimes(appointment.date);
+
+      if (!availableTimes.includes(appointment.time)) {
+        return res.status(409).json({
+          error: "Não foi possível restaurar. Esse horário não está mais disponível."
         });
       }
     }
@@ -1493,29 +1524,6 @@ app.delete("/api/admin/blocks/:id", adminAuth, async (req, res) => {
     console.error("Erro em DELETE /api/admin/blocks/:id:", error);
     res.status(500).json({ error: "Erro ao remover bloqueio." });
   }
-});
-
-app.post("/api/admin/login", loginLimiter, (req, res) => {
-  const user = normalizeText(req.body.user || req.body.username, 80);
-  const password = String(req.body.password || "");
-
-  if (!user || !password) {
-    return res.status(400).json({ error: "Informe usuário e senha." });
-  }
-
-  if (!validateAdminCredentials(user, password)) {
-    return res.status(401).json({ error: "Usuário ou senha incorretos." });
-  }
-
-  const token = createAdminToken(user);
-
-  res.json({
-    message: "Login realizado com sucesso.",
-    token,
-    token_type: "Bearer",
-    expires_in: JWT_EXPIRES_IN,
-    user
-  });
 });
 
 app.use((req, res) => {
