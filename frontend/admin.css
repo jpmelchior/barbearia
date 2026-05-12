@@ -441,8 +441,6 @@ input:focus {
 .panel-header h1 {
   margin-bottom: 8px;
 
-  color: var(--white);
-
   font-family: Georgia, serif;
   font-size: clamp(2rem, 4vw, 3.5rem);
   line-height: 0.95;
@@ -634,6 +632,13 @@ input:focus {
   border-radius: 18px;
 }
 
+.day-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-title-area strong,
 .day-header strong {
   color: var(--white);
 
@@ -644,14 +649,40 @@ input:focus {
   text-transform: uppercase;
 }
 
-.day-header span {
-  color: var(--red2);
-
-  font-size: 0.76rem;
-  font-weight: 950;
-
+.day-title-area small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.day-info-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.day-info-area span,
+.day-header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 34px;
+  padding: 8px 12px;
+
+  background: rgba(239, 68, 68, 0.10);
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 999px;
+
+  color: var(--red2);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
 }
 
 /* CARD DE AGENDAMENTO */
@@ -765,6 +796,17 @@ input:focus {
 }
 
 .day-pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+  padding: 10px 16px;
+
+  background: rgba(239, 68, 68, 0.10);
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 999px;
+
   color: var(--red2);
 
   font-size: 0.82rem;
@@ -789,6 +831,11 @@ input:focus {
 .day-pagination button:focus-visible {
   background: linear-gradient(135deg, var(--red-dark), var(--red2));
   color: #ffffff;
+}
+
+.day-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* FORMULÁRIO DE BLOQUEIO */
@@ -1058,8 +1105,23 @@ input:focus {
     align-items: flex-start;
   }
 
+  .day-title-area {
+    width: 100%;
+  }
+
+  .day-title-area strong,
   .day-header strong {
     font-size: 1.45rem;
+  }
+
+  .day-info-area {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .day-info-area span,
+  .day-header > span {
+    width: 100%;
   }
 
   .time-box strong {
