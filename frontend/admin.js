@@ -25,21 +25,7 @@ const blocksList = document.getElementById("blocksList");
 
 const tabs = document.querySelectorAll(".tab");
 
-/*
-  Aqui controla quantos horários aparecem por página dentro de cada dia.
-  Exemplo:
-  5 horários = 1 página
-  10 horários = 2 páginas
-  15 horários = 3 páginas
-*/
 const perDayPageSize = 5;
-
-/*
-  Guarda a página atual de cada dia separadamente.
-  Exemplo:
-  scheduled-2026-05-12 = página 2
-  completed-2026-05-12 = página 1
-*/
 const dayPages = {};
 
 let authHeader = localStorage.getItem("adminAuth") || "";
@@ -48,6 +34,10 @@ let savedPassword = localStorage.getItem("adminPassword") || "";
 
 let appointments = [];
 let blocks = [];
+
+let historySearch = "";
+let historyService = "";
+let historyDate = "";
 
 adminUser.value = savedUser;
 adminPassword.value = savedPassword;
@@ -79,6 +69,17 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
+function onlyDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function parseAppointmentDateTime(item) {
   return new Date(`${item.date}T${item.time || "00:00"}:00`);
 }
@@ -86,10 +87,6 @@ function parseAppointmentDateTime(item) {
 function isCompletedAppointment(item) {
   const appointmentDateTime = parseAppointmentDateTime(item);
 
-  /*
-    Depois de 3 horas do horário marcado,
-    o atendimento passa para a aba de finalizados.
-  */
   const completedLimit = new Date(
     appointmentDateTime.getTime() + 3 * 60 * 60 * 1000
   );
@@ -227,14 +224,51 @@ async function loadAppointments() {
   }
 }
 
-function renderAppointments() {
-  const activeAppointments = sortAppointments(
-    appointments.filter((item) => !isCompletedAppointment(item))
-  );
-
-  const completedAppointments = sortAppointments(
+function getCompletedAppointments() {
+  return sortAppointments(
     appointments.filter((item) => isCompletedAppointment(item))
   ).reverse();
+}
+
+function getActiveAppointments() {
+  return sortAppointments(
+    appointments.filter((item) => !isCompletedAppointment(item))
+  );
+}
+
+function getFilteredCompletedAppointments() {
+  const completedAppointments = getCompletedAppointments();
+
+  return completedAppointments.filter((item) => {
+    const search = normalizeText(historySearch);
+    const searchDigits = onlyDigits(historySearch);
+
+    const name = normalizeText(item.name);
+    const phone = onlyDigits(item.phone);
+    const service = normalizeText(item.service);
+    const date = item.date || "";
+
+    const matchesSearch =
+      !search ||
+      name.includes(search) ||
+      service.includes(search) ||
+      phone.includes(searchDigits);
+
+    const matchesService =
+      !historyService ||
+      item.service === historyService;
+
+    const matchesDate =
+      !historyDate ||
+      date === historyDate;
+
+    return matchesSearch && matchesService && matchesDate;
+  });
+}
+
+function renderAppointments() {
+  const activeAppointments = getActiveAppointments();
+  const completedAppointments = getFilteredCompletedAppointments();
 
   renderGroupedAppointments(
     appointmentsList,
@@ -243,12 +277,138 @@ function renderAppointments() {
     "scheduled"
   );
 
+  renderHistoryTools();
+
   renderGroupedAppointments(
     completedList,
     completedAppointments,
-    "Nenhum atendimento finalizado ainda.",
+    "Nenhum atendimento encontrado no histórico.",
     "completed"
   );
+}
+
+function renderHistoryTools() {
+  let historyTools = document.getElementById("historyTools");
+
+  if (!historyTools) {
+    historyTools = document.createElement("div");
+    historyTools.id = "historyTools";
+    historyTools.className = "history-tools";
+
+    completedList.before(historyTools);
+  }
+
+  const completedAppointments = getCompletedAppointments();
+
+  const services = [...new Set(
+    completedAppointments
+      .map((item) => item.service)
+      .filter(Boolean)
+  )].sort();
+
+  historyTools.innerHTML = `
+    <div class="history-tools-header">
+      <div>
+        <h3>Histórico de clientes</h3>
+        <p>
+          Busque clientes atendidos por nome, número, serviço ou data.
+        </p>
+      </div>
+
+      <button 
+        type="button" 
+        class="clear-history-btn" 
+        id="clearHistoryBtn"
+        ${completedAppointments.length ? "" : "disabled"}
+      >
+        Limpar histórico
+      </button>
+    </div>
+
+    <div class="history-filters">
+      <label>
+        Buscar cliente
+        <input 
+          type="search" 
+          id="historySearchInput" 
+          placeholder="Nome, número ou serviço"
+          value="${escapeHTML(historySearch)}"
+        />
+      </label>
+
+      <label>
+        Serviço
+        <select id="historyServiceFilter">
+          <option value="">Todos os serviços</option>
+          ${services.map((service) => `
+            <option value="${escapeHTML(service)}" ${historyService === service ? "selected" : ""}>
+              ${escapeHTML(service)}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+
+      <label>
+        Data
+        <input 
+          type="date" 
+          id="historyDateFilter" 
+          value="${escapeHTML(historyDate)}"
+        />
+      </label>
+
+      <button type="button" class="reset-history-btn" id="resetHistoryFilters">
+        Limpar filtros
+      </button>
+    </div>
+
+    <div class="history-summary">
+      <span>Total atendidos: ${completedAppointments.length}</span>
+      <span>Resultado atual: ${getFilteredCompletedAppointments().length}</span>
+    </div>
+  `;
+
+  const historySearchInput = document.getElementById("historySearchInput");
+  const historyServiceFilter = document.getElementById("historyServiceFilter");
+  const historyDateFilter = document.getElementById("historyDateFilter");
+  const resetHistoryFilters = document.getElementById("resetHistoryFilters");
+  const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+
+  historySearchInput.addEventListener("input", () => {
+    historySearch = historySearchInput.value;
+    resetCompletedPagination();
+    renderAppointments();
+  });
+
+  historyServiceFilter.addEventListener("change", () => {
+    historyService = historyServiceFilter.value;
+    resetCompletedPagination();
+    renderAppointments();
+  });
+
+  historyDateFilter.addEventListener("change", () => {
+    historyDate = historyDateFilter.value;
+    resetCompletedPagination();
+    renderAppointments();
+  });
+
+  resetHistoryFilters.addEventListener("click", () => {
+    historySearch = "";
+    historyService = "";
+    historyDate = "";
+    resetCompletedPagination();
+    renderAppointments();
+  });
+
+  clearHistoryBtn.addEventListener("click", clearCompletedHistory);
+}
+
+function resetCompletedPagination() {
+  Object.keys(dayPages).forEach((key) => {
+    if (key.startsWith("completed-")) {
+      dayPages[key] = 1;
+    }
+  });
 }
 
 function renderGroupedAppointments(container, list, emptyMessage, groupType) {
@@ -266,10 +426,6 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
     .forEach((date) => {
       const items = grouped[date];
 
-      /*
-        Cada dia tem uma chave única.
-        Assim, a página do dia 12/05 não interfere no dia 13/05.
-      */
       const pageKey = `${groupType}-${date}`;
 
       if (!dayPages[pageKey]) {
@@ -335,7 +491,9 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
             <strong>${escapeHTML(item.phone)}</strong>
           </div>
 
-          <button class="cancel-btn" data-id="${item.id}">Cancelar</button>
+          <button class="cancel-btn" data-id="${item.id}">
+            ${groupType === "completed" ? "Remover" : "Cancelar"}
+          </button>
         `;
 
         daySection.appendChild(card);
@@ -376,7 +534,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
 
-      if (!confirm("Deseja cancelar este agendamento?")) return;
+      if (!confirm("Deseja remover/cancelar este registro?")) return;
 
       await cancelAppointment(id);
     });
@@ -414,13 +572,54 @@ async function cancelAppointment(id) {
     });
 
     if (!response.ok) {
-      alert("Erro ao cancelar agendamento.");
+      alert("Erro ao remover registro.");
       return;
     }
 
     await loadAppointments();
   } catch (error) {
     alert("Erro ao conectar ao servidor.");
+  }
+}
+
+async function clearCompletedHistory() {
+  const completedAppointments = getCompletedAppointments();
+
+  if (!completedAppointments.length) {
+    alert("Não existe histórico para limpar.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Deseja limpar todo o histórico de ${completedAppointments.length} cliente(s) atendido(s)? Essa ação não pode ser desfeita.`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const ids = completedAppointments.map((item) => item.id);
+
+    for (const id of ids) {
+      const response = await adminFetch(`${API_URL}/admin/appointments/${id}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        alert("Alguns registros não puderam ser removidos.");
+        break;
+      }
+    }
+
+    historySearch = "";
+    historyService = "";
+    historyDate = "";
+    resetCompletedPagination();
+
+    await loadAppointments();
+
+    alert("Histórico limpo com sucesso.");
+  } catch (error) {
+    alert("Erro ao limpar histórico.");
   }
 }
 
