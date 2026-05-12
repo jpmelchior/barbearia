@@ -4,6 +4,7 @@ const loginBox = document.getElementById("loginBox");
 const adminPanel = document.getElementById("adminPanel");
 const loginForm = document.getElementById("loginForm");
 const loginMessage = document.getElementById("loginMessage");
+const adminNotice = document.getElementById("adminNotice");
 
 const adminUser = document.getElementById("adminUser");
 const adminPassword = document.getElementById("adminPassword");
@@ -90,6 +91,39 @@ function clearAdminSession() {
 function setLoginMessage(text, type = "") {
   loginMessage.textContent = text;
   loginMessage.className = `message ${type}`;
+}
+
+let adminNoticeTimer = null;
+
+function showAdminNotice(text, type = "info", autoHide = true) {
+  if (!adminNotice) return;
+
+  if (adminNoticeTimer) {
+    clearTimeout(adminNoticeTimer);
+    adminNoticeTimer = null;
+  }
+
+  adminNotice.textContent = text;
+  adminNotice.className = `admin-notice ${type}`;
+  adminNotice.classList.remove("hidden");
+
+  if (autoHide) {
+    adminNoticeTimer = setTimeout(() => {
+      adminNotice.classList.add("hidden");
+    }, 5200);
+  }
+}
+
+function hideAdminNotice() {
+  if (!adminNotice) return;
+  adminNotice.classList.add("hidden");
+}
+
+function handleUnauthorized(message = "Sua sessão expirou. Faça login novamente.") {
+  clearAdminSession();
+  showLogin();
+  setLoginMessage(message, "error");
+  showAdminNotice(message, "warning", false);
 }
 
 function showPanel() {
@@ -300,9 +334,7 @@ async function loadAppointments() {
     const response = await adminFetch(`${API_URL}/admin/appointments`);
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
@@ -605,20 +637,18 @@ async function updateAppointmentStatus(id, status) {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert(data.error || "Erro ao atualizar registro.");
+      showAdminNotice(data.error || "Erro ao atualizar registro.", "error");
       return;
     }
 
     await loadAppointments();
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
 }
 
@@ -626,7 +656,7 @@ async function clearCompletedHistory() {
   const historyAppointments = getHistoryAppointments();
 
   if (!historyAppointments.length) {
-    alert("Não existe histórico para limpar.");
+    showAdminNotice("Não existe histórico para limpar.", "warning");
     return;
   }
 
@@ -650,14 +680,12 @@ async function clearCompletedHistory() {
       });
 
       if (response.status === 401) {
-        clearAdminSession();
-        showLogin();
-        setLoginMessage("Faça login novamente.", "error");
-        return;
+        handleUnauthorized();
+      return;
       }
 
       if (!response.ok) {
-        alert("Alguns registros não puderam ser removidos.");
+        showAdminNotice("Alguns registros não puderam ser removidos.", "warning");
         break;
       }
     }
@@ -674,9 +702,9 @@ async function clearCompletedHistory() {
 
     await loadAppointments();
 
-    alert("Histórico limpo com sucesso.");
+    showAdminNotice("Histórico limpo com sucesso.", "success");
   } catch (error) {
-    alert("Erro ao limpar histórico.");
+    showAdminNotice("Erro ao limpar histórico.", "error");
   }
 }
 
@@ -687,9 +715,7 @@ async function loadBlocks() {
     const response = await adminFetch(`${API_URL}/admin/blocks`);
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
@@ -767,12 +793,12 @@ async function createBlock(event) {
   const reason = blockReason.value.trim();
 
   if (!startDate || !reason) {
-    alert("Preencha a data inicial e o motivo.");
+    showAdminNotice("Preencha a data inicial e o motivo.", "warning");
     return;
   }
 
   if (endDate < startDate) {
-    alert("A data final não pode ser menor que a data inicial.");
+    showAdminNotice("A data final não pode ser menor que a data inicial.", "warning");
     return;
   }
 
@@ -790,23 +816,21 @@ async function createBlock(event) {
     const data = await response.json();
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert(data.error || "Erro ao criar bloqueio.");
+      showAdminNotice(data.error || "Erro ao criar bloqueio.", "error");
       return;
     }
 
     blockForm.reset();
     await loadBlocks();
 
-    alert(data.message || "Bloqueio criado com sucesso.");
+    showAdminNotice(data.message || "Bloqueio criado com sucesso.", "success");
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
 }
 
@@ -817,20 +841,18 @@ async function removeBlock(id) {
     });
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert("Erro ao remover bloqueio.");
+      showAdminNotice("Erro ao remover bloqueio.", "error");
       return;
     }
 
     await loadBlocks();
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
 }
 
@@ -860,7 +882,7 @@ function buildCSV(headers, rows) {
 
 function downloadCSV(filename, headers, rows) {
   if (!rows.length) {
-    alert("Não há dados para exportar.");
+    showAdminNotice("Não há dados para exportar.", "warning");
     return;
   }
 
@@ -955,9 +977,7 @@ async function loadServices() {
     const response = await adminFetch(`${API_URL}/admin/services`);
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
@@ -1076,12 +1096,12 @@ async function saveService(event) {
   const active = serviceActiveInput.checked ? 1 : 0;
 
   if (!name || name.length < 2) {
-    alert("Informe o nome do serviço.");
+    showAdminNotice("Informe o nome do serviço.", "warning");
     return;
   }
 
   if (price === "" || Number(price) < 0) {
-    alert("Informe um preço válido.");
+    showAdminNotice("Informe um preço válido.", "warning");
     return;
   }
 
@@ -1103,22 +1123,20 @@ async function saveService(event) {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert(data.error || "Erro ao salvar serviço.");
+      showAdminNotice(data.error || "Erro ao salvar serviço.", "error");
       return;
     }
 
     resetServiceForm();
     await loadServices();
-    alert(data.message || "Serviço salvo com sucesso.");
+    showAdminNotice(data.message || "Serviço salvo com sucesso.", "success");
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
 }
 
@@ -1131,21 +1149,19 @@ async function disableService(id) {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert(data.error || "Erro ao desativar serviço.");
+      showAdminNotice(data.error || "Erro ao desativar serviço.", "error");
       return;
     }
 
     await loadServices();
-    alert(data.message || "Serviço desativado com sucesso.");
+    showAdminNotice(data.message || "Serviço desativado com sucesso.", "success");
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
 }
 
@@ -1157,9 +1173,7 @@ async function loadBusinessHours() {
     const response = await adminFetch(`${API_URL}/admin/business-hours`);
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
@@ -1259,21 +1273,19 @@ async function saveBusinessHours(event) {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 401) {
-      clearAdminSession();
-      showLogin();
-      setLoginMessage("Faça login novamente.", "error");
+      handleUnauthorized();
       return;
     }
 
     if (!response.ok) {
-      alert(data.error || "Erro ao salvar funcionamento.");
+      showAdminNotice(data.error || "Erro ao salvar funcionamento.", "error");
       return;
     }
 
     await loadBusinessHours();
-    alert(data.message || "Funcionamento atualizado com sucesso.");
+    showAdminNotice(data.message || "Funcionamento atualizado com sucesso.", "success");
   } catch (error) {
-    alert("Erro ao conectar ao servidor.");
+    showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   } finally {
     saveBusinessHoursBtn.disabled = false;
     saveBusinessHoursBtn.textContent = "Salvar funcionamento";
@@ -1327,6 +1339,7 @@ loginForm.addEventListener("submit", async (event) => {
 
     setLoginMessage("");
     showPanel();
+    showAdminNotice("Login realizado com sucesso.", "success");
 
     await loadAll();
   } catch (error) {
@@ -1334,7 +1347,16 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-refreshBtn.addEventListener("click", loadAll);
+refreshBtn.addEventListener("click", async () => {
+  showAdminNotice("Atualizando dados do painel...", "info", false);
+
+  try {
+    await loadAll();
+    showAdminNotice("Painel atualizado com sucesso.", "success");
+  } catch (error) {
+    showAdminNotice("Erro ao atualizar painel.", "error");
+  }
+});
 
 logoutBtn.addEventListener("click", () => {
   clearAdminSession();
@@ -1345,6 +1367,7 @@ logoutBtn.addEventListener("click", () => {
   adminPassword.value = "";
   showLogin();
   setLoginMessage("Você saiu do painel.", "");
+  hideAdminNotice();
 });
 
 blockForm.addEventListener("submit", createBlock);
