@@ -78,7 +78,7 @@ const corsOptions = allowedOrigins.length
 
         return callback(new Error("Origem não permitida pelo CORS."));
       },
-      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: false
     }
