@@ -2,6 +2,8 @@
 
 const API_URL = "https://barbearia-ygxt.onrender.com/api";
 
+const DEVICE_ID_KEY = "barbearia_device_id";
+
 const form = document.getElementById("appointmentForm");
 const daysContainer = document.getElementById("daysContainer");
 const timesContainer = document.getElementById("timesContainer");
@@ -21,6 +23,38 @@ const weekdayFormatter = new Intl.DateTimeFormat("pt-BR", {
   weekday: "short",
   timeZone: "America/Sao_Paulo"
 });
+
+function generateDeviceId() {
+  const cryptoApi = window.crypto || window.msCrypto;
+
+  if (cryptoApi && cryptoApi.randomUUID) {
+    return cryptoApi.randomUUID();
+  }
+
+  if (cryptoApi && cryptoApi.getRandomValues) {
+    const array = new Uint8Array(16);
+    cryptoApi.getRandomValues(array);
+
+    return Array.from(array)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+}
+
+function getDeviceId() {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+
+  if (!deviceId) {
+    deviceId = generateDeviceId();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+
+  return deviceId;
+}
 
 function formatISODate(date) {
   const year = date.getFullYear();
@@ -293,7 +327,8 @@ form.addEventListener("submit", async (event) => {
     phone: phoneInput.value.trim(),
     service: serviceInput.value,
     date: dateInput.value,
-    time: timeInput.value
+    time: timeInput.value,
+    device_id: getDeviceId()
   };
 
   const phoneDigits = onlyDigits(appointment.phone);
@@ -384,5 +419,6 @@ function setupRevealAnimations() {
   });
 }
 
+getDeviceId();
 setupRevealAnimations();
 generateDays();
