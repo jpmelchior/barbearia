@@ -23,13 +23,12 @@ const blockTime = document.getElementById("blockTime");
 const blockReason = document.getElementById("blockReason");
 const blocksList = document.getElementById("blocksList");
 
-const historySearchInput = document.getElementById("historySearchInput");
-const historyServiceFilter = document.getElementById("historyServiceFilter");
 const historyDateFilter = document.getElementById("historyDateFilter");
 const resetHistoryFilters = document.getElementById("resetHistoryFilters");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 const historyTotal = document.getElementById("historyTotal");
 const historyResult = document.getElementById("historyResult");
+const dateFilterButtons = document.querySelectorAll(".date-filter-btn");
 
 const tabs = document.querySelectorAll(".tab");
 
@@ -43,9 +42,8 @@ let savedPassword = localStorage.getItem("adminPassword") || "";
 let appointments = [];
 let blocks = [];
 
-let historySearch = "";
-let historyService = "";
 let historyDate = "";
+let historyDateMode = "all";
 
 adminUser.value = savedUser;
 adminPassword.value = savedPassword;
@@ -75,17 +73,6 @@ function escapeHTML(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function onlyDigits(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function parseAppointmentDateTime(item) {
@@ -161,6 +148,49 @@ function groupByDate(list) {
   }, {});
 }
 
+function getTodayISO() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getYesterdayISO() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const year = yesterday.getFullYear();
+  const month = String(yesterday.getMonth() + 1).padStart(2, "0");
+  const day = String(yesterday.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isWithinLastDays(dateString, days) {
+  const itemDate = new Date(`${dateString}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const limit = new Date(today);
+  limit.setDate(today.getDate() - (days - 1));
+
+  return itemDate >= limit && itemDate <= today;
+}
+
+function isCurrentMonth(dateString) {
+  const itemDate = new Date(`${dateString}T00:00:00`);
+  const today = new Date();
+
+  return (
+    itemDate.getFullYear() === today.getFullYear() &&
+    itemDate.getMonth() === today.getMonth()
+  );
+}
+
 async function adminFetch(url, options = {}) {
   return fetch(url, {
     ...options,
@@ -225,8 +255,6 @@ async function loadAppointments() {
     }
 
     appointments = Array.isArray(data) ? data : [];
-
-    updateServiceFilter();
     renderAppointments();
   } catch (error) {
     appointmentsList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
@@ -250,54 +278,30 @@ function getFilteredCompletedAppointments() {
   const completedAppointments = getCompletedAppointments();
 
   return completedAppointments.filter((item) => {
-    const search = normalizeText(historySearch);
-    const searchDigits = onlyDigits(historySearch);
-
-    const name = normalizeText(item.name);
-    const phone = onlyDigits(item.phone);
-    const service = normalizeText(item.service);
     const date = item.date || "";
 
-    const matchesSearch =
-      !search ||
-      name.includes(search) ||
-      service.includes(search) ||
-      phone.includes(searchDigits);
+    if (historyDate) {
+      return date === historyDate;
+    }
 
-    const matchesService =
-      !historyService ||
-      item.service === historyService;
+    if (historyDateMode === "today") {
+      return date === getTodayISO();
+    }
 
-    const matchesDate =
-      !historyDate ||
-      date === historyDate;
+    if (historyDateMode === "yesterday") {
+      return date === getYesterdayISO();
+    }
 
-    return matchesSearch && matchesService && matchesDate;
+    if (historyDateMode === "last7") {
+      return isWithinLastDays(date, 7);
+    }
+
+    if (historyDateMode === "month") {
+      return isCurrentMonth(date);
+    }
+
+    return true;
   });
-}
-
-function updateServiceFilter() {
-  const completedAppointments = getCompletedAppointments();
-
-  const services = [...new Set(
-    completedAppointments
-      .map((item) => item.service)
-      .filter(Boolean)
-  )].sort();
-
-  const currentValue = historyServiceFilter.value;
-
-  historyServiceFilter.innerHTML = `
-    <option value="">Todos os serviços</option>
-    ${services.map((service) => `
-      <option value="${escapeHTML(service)}">
-        ${escapeHTML(service)}
-      </option>
-    `).join("")}
-  `;
-
-  historyServiceFilter.value = services.includes(currentValue) ? currentValue : "";
-  historyService = historyServiceFilter.value;
 }
 
 function renderAppointments() {
@@ -531,13 +535,13 @@ async function clearCompletedHistory() {
       }
     }
 
-    historySearch = "";
-    historyService = "";
     historyDate = "";
-
-    historySearchInput.value = "";
-    historyServiceFilter.value = "";
+    historyDateMode = "all";
     historyDateFilter.value = "";
+
+    dateFilterButtons.forEach((item) => {
+      item.classList.toggle("active", item.dataset.filter === "all");
+    });
 
     resetCompletedPagination();
 
@@ -729,32 +733,38 @@ logoutBtn.addEventListener("click", () => {
 
 blockForm.addEventListener("submit", createBlock);
 
-historySearchInput.addEventListener("input", () => {
-  historySearch = historySearchInput.value;
-  resetCompletedPagination();
-  renderAppointments();
-});
+dateFilterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    dateFilterButtons.forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
 
-historyServiceFilter.addEventListener("change", () => {
-  historyService = historyServiceFilter.value;
-  resetCompletedPagination();
-  renderAppointments();
+    historyDateMode = button.dataset.filter;
+    historyDate = "";
+    historyDateFilter.value = "";
+
+    resetCompletedPagination();
+    renderAppointments();
+  });
 });
 
 historyDateFilter.addEventListener("change", () => {
   historyDate = historyDateFilter.value;
+  historyDateMode = "manual";
+
+  dateFilterButtons.forEach((item) => item.classList.remove("active"));
+
   resetCompletedPagination();
   renderAppointments();
 });
 
 resetHistoryFilters.addEventListener("click", () => {
-  historySearch = "";
-  historyService = "";
   historyDate = "";
-
-  historySearchInput.value = "";
-  historyServiceFilter.value = "";
+  historyDateMode = "all";
   historyDateFilter.value = "";
+
+  dateFilterButtons.forEach((item) => {
+    item.classList.toggle("active", item.dataset.filter === "all");
+  });
 
   resetCompletedPagination();
   renderAppointments();
