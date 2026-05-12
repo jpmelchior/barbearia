@@ -94,11 +94,15 @@ async function loadServices() {
 
     services.forEach((service) => {
       const option = document.createElement("option");
+
       option.value = service.name;
       option.textContent = `${service.name} — ${service.price_label || "R$ 0,00"}`;
+
       serviceInput.appendChild(option);
     });
   } catch (error) {
+    console.error("Erro ao carregar serviços:", error);
+
     serviceInput.innerHTML = '<option value="">Erro ao carregar serviços</option>';
     setMessage("Erro ao carregar serviços. Recarregue a página.", "error");
   }
@@ -108,6 +112,7 @@ function setEmptyTimes(text) {
   timesContainer.innerHTML = "";
 
   const emptyText = document.createElement("p");
+
   emptyText.className = "empty-text";
   emptyText.textContent = text;
 
@@ -122,14 +127,17 @@ function createPaginationControls() {
   }
 
   const controls = document.createElement("div");
+
   controls.className = "pagination-controls reveal show";
 
   const prevButton = document.createElement("button");
+
   prevButton.type = "button";
   prevButton.className = "pagination-btn";
   prevButton.textContent = "← Dias anteriores";
 
   const nextButton = document.createElement("button");
+
   nextButton.type = "button";
   nextButton.className = "pagination-btn";
   nextButton.textContent = "Próximos dias →";
@@ -174,6 +182,7 @@ function createDayButton(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
 
   const button = document.createElement("button");
+
   button.type = "button";
   button.className = "day-btn";
   button.setAttribute("aria-pressed", "false");
@@ -224,6 +233,7 @@ function generateDays() {
 
   while (added < DAYS_PER_PAGE) {
     const date = new Date(today);
+
     date.setDate(today.getDate() + index);
 
     const dayOfWeek = date.getDay();
@@ -234,7 +244,9 @@ function generateDays() {
         skipped++;
       } else {
         const dayButton = createDayButton(date);
+
         dayButton.style.animationDelay = `${added * 35}ms`;
+
         daysContainer.appendChild(dayButton);
         added++;
       }
@@ -248,6 +260,7 @@ function generateDays() {
 
 function createTimeButton(time, available, reason) {
   const button = document.createElement("button");
+
   button.type = "button";
   button.className = "time-btn";
   button.setAttribute("aria-pressed", "false");
@@ -275,6 +288,7 @@ function createTimeButton(time, available, reason) {
 
     button.classList.add("active");
     button.setAttribute("aria-pressed", "true");
+
     timeInput.value = time;
   });
 
@@ -318,10 +332,13 @@ async function loadTimes(date) {
       }
 
       const button = createTimeButton(time, Boolean(time) && available, reason);
+
       button.style.animationDelay = `${index * 30}ms`;
+
       timesContainer.appendChild(button);
     });
   } catch (error) {
+    console.error("Erro ao carregar horários:", error);
     setEmptyTimes("Erro ao carregar horários. Tente novamente.");
   } finally {
     timesContainer.removeAttribute("aria-busy");
@@ -413,7 +430,10 @@ form.addEventListener("submit", async (event) => {
     });
 
     setEmptyTimes("Escolha um dia primeiro.");
+
+    await loadServices();
   } catch (error) {
+    console.error("Erro ao criar agendamento:", error);
     setMessage("Erro ao conectar ao servidor.", "error");
   } finally {
     submitButton.disabled = false;
@@ -450,6 +470,11 @@ function setupRevealAnimations() {
   });
 }
 
-getDeviceId();
-setupRevealAnimations();
-generateDays();
+async function initializePage() {
+  getDeviceId();
+  setupRevealAnimations();
+  await loadServices();
+  generateDays();
+}
+
+initializePage();
