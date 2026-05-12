@@ -23,6 +23,14 @@ const blockTime = document.getElementById("blockTime");
 const blockReason = document.getElementById("blockReason");
 const blocksList = document.getElementById("blocksList");
 
+const historySearchInput = document.getElementById("historySearchInput");
+const historyServiceFilter = document.getElementById("historyServiceFilter");
+const historyDateFilter = document.getElementById("historyDateFilter");
+const resetHistoryFilters = document.getElementById("resetHistoryFilters");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const historyTotal = document.getElementById("historyTotal");
+const historyResult = document.getElementById("historyResult");
+
 const tabs = document.querySelectorAll(".tab");
 
 const perDayPageSize = 5;
@@ -217,6 +225,8 @@ async function loadAppointments() {
     }
 
     appointments = Array.isArray(data) ? data : [];
+
+    updateServiceFilter();
     renderAppointments();
   } catch (error) {
     appointmentsList.innerHTML = `<p class="empty error">Erro ao conectar ao servidor.</p>`;
@@ -224,16 +234,16 @@ async function loadAppointments() {
   }
 }
 
-function getCompletedAppointments() {
-  return sortAppointments(
-    appointments.filter((item) => isCompletedAppointment(item))
-  ).reverse();
-}
-
 function getActiveAppointments() {
   return sortAppointments(
     appointments.filter((item) => !isCompletedAppointment(item))
   );
+}
+
+function getCompletedAppointments() {
+  return sortAppointments(
+    appointments.filter((item) => isCompletedAppointment(item))
+  ).reverse();
 }
 
 function getFilteredCompletedAppointments() {
@@ -266,38 +276,7 @@ function getFilteredCompletedAppointments() {
   });
 }
 
-function renderAppointments() {
-  const activeAppointments = getActiveAppointments();
-  const completedAppointments = getFilteredCompletedAppointments();
-
-  renderGroupedAppointments(
-    appointmentsList,
-    activeAppointments,
-    "Nenhum horário futuro marcado.",
-    "scheduled"
-  );
-
-  renderHistoryTools();
-
-  renderGroupedAppointments(
-    completedList,
-    completedAppointments,
-    "Nenhum atendimento encontrado no histórico.",
-    "completed"
-  );
-}
-
-function renderHistoryTools() {
-  let historyTools = document.getElementById("historyTools");
-
-  if (!historyTools) {
-    historyTools = document.createElement("div");
-    historyTools.id = "historyTools";
-    historyTools.className = "history-tools";
-
-    completedList.before(historyTools);
-  }
-
+function updateServiceFilter() {
   const completedAppointments = getCompletedAppointments();
 
   const services = [...new Set(
@@ -306,101 +285,43 @@ function renderHistoryTools() {
       .filter(Boolean)
   )].sort();
 
-  historyTools.innerHTML = `
-    <div class="history-tools-header">
-      <div>
-        <h3>Histórico de clientes</h3>
-        <p>
-          Busque clientes atendidos por nome, número, serviço ou data.
-        </p>
-      </div>
+  const currentValue = historyServiceFilter.value;
 
-      <button 
-        type="button" 
-        class="clear-history-btn" 
-        id="clearHistoryBtn"
-        ${completedAppointments.length ? "" : "disabled"}
-      >
-        Limpar histórico
-      </button>
-    </div>
-
-    <div class="history-filters">
-      <label>
-        Buscar cliente
-        <input 
-          type="search" 
-          id="historySearchInput" 
-          placeholder="Nome, número ou serviço"
-          value="${escapeHTML(historySearch)}"
-        />
-      </label>
-
-      <label>
-        Serviço
-        <select id="historyServiceFilter">
-          <option value="">Todos os serviços</option>
-          ${services.map((service) => `
-            <option value="${escapeHTML(service)}" ${historyService === service ? "selected" : ""}>
-              ${escapeHTML(service)}
-            </option>
-          `).join("")}
-        </select>
-      </label>
-
-      <label>
-        Data
-        <input 
-          type="date" 
-          id="historyDateFilter" 
-          value="${escapeHTML(historyDate)}"
-        />
-      </label>
-
-      <button type="button" class="reset-history-btn" id="resetHistoryFilters">
-        Limpar filtros
-      </button>
-    </div>
-
-    <div class="history-summary">
-      <span>Total atendidos: ${completedAppointments.length}</span>
-      <span>Resultado atual: ${getFilteredCompletedAppointments().length}</span>
-    </div>
+  historyServiceFilter.innerHTML = `
+    <option value="">Todos os serviços</option>
+    ${services.map((service) => `
+      <option value="${escapeHTML(service)}">
+        ${escapeHTML(service)}
+      </option>
+    `).join("")}
   `;
 
-  const historySearchInput = document.getElementById("historySearchInput");
-  const historyServiceFilter = document.getElementById("historyServiceFilter");
-  const historyDateFilter = document.getElementById("historyDateFilter");
-  const resetHistoryFilters = document.getElementById("resetHistoryFilters");
-  const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+  historyServiceFilter.value = services.includes(currentValue) ? currentValue : "";
+  historyService = historyServiceFilter.value;
+}
 
-  historySearchInput.addEventListener("input", () => {
-    historySearch = historySearchInput.value;
-    resetCompletedPagination();
-    renderAppointments();
-  });
+function renderAppointments() {
+  const activeAppointments = getActiveAppointments();
+  const completedAppointments = getFilteredCompletedAppointments();
+  const allCompleted = getCompletedAppointments();
 
-  historyServiceFilter.addEventListener("change", () => {
-    historyService = historyServiceFilter.value;
-    resetCompletedPagination();
-    renderAppointments();
-  });
+  historyTotal.textContent = `Total atendidos: ${allCompleted.length}`;
+  historyResult.textContent = `Resultado atual: ${completedAppointments.length}`;
+  clearHistoryBtn.disabled = allCompleted.length === 0;
 
-  historyDateFilter.addEventListener("change", () => {
-    historyDate = historyDateFilter.value;
-    resetCompletedPagination();
-    renderAppointments();
-  });
+  renderGroupedAppointments(
+    appointmentsList,
+    activeAppointments,
+    "Nenhum horário futuro marcado.",
+    "scheduled"
+  );
 
-  resetHistoryFilters.addEventListener("click", () => {
-    historySearch = "";
-    historyService = "";
-    historyDate = "";
-    resetCompletedPagination();
-    renderAppointments();
-  });
-
-  clearHistoryBtn.addEventListener("click", clearCompletedHistory);
+  renderGroupedAppointments(
+    completedList,
+    completedAppointments,
+    "Nenhum cliente encontrado no histórico.",
+    "completed"
+  );
 }
 
 function resetCompletedPagination() {
@@ -425,7 +346,6 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
     .sort()
     .forEach((date) => {
       const items = grouped[date];
-
       const pageKey = `${groupType}-${date}`;
 
       if (!dayPages[pageKey]) {
@@ -530,17 +450,18 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
       container.appendChild(daySection);
     });
 
-  document.querySelectorAll(".cancel-btn").forEach((button) => {
+  container.querySelectorAll(".cancel-btn").forEach((button) => {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
+      const actionText = groupType === "completed" ? "remover este registro" : "cancelar este agendamento";
 
-      if (!confirm("Deseja remover/cancelar este registro?")) return;
+      if (!confirm(`Deseja ${actionText}?`)) return;
 
       await cancelAppointment(id);
     });
   });
 
-  document.querySelectorAll(".day-prev").forEach((button) => {
+  container.querySelectorAll(".day-prev").forEach((button) => {
     button.addEventListener("click", () => {
       const pageKey = button.dataset.pageKey;
 
@@ -550,7 +471,7 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
     });
   });
 
-  document.querySelectorAll(".day-next").forEach((button) => {
+  container.querySelectorAll(".day-next").forEach((button) => {
     button.addEventListener("click", () => {
       const pageKey = button.dataset.pageKey;
       const totalPages = Number(button.dataset.totalPages);
@@ -613,6 +534,11 @@ async function clearCompletedHistory() {
     historySearch = "";
     historyService = "";
     historyDate = "";
+
+    historySearchInput.value = "";
+    historyServiceFilter.value = "";
+    historyDateFilter.value = "";
+
     resetCompletedPagination();
 
     await loadAppointments();
@@ -691,7 +617,7 @@ function renderBlocks() {
       blocksList.appendChild(card);
     });
 
-  document.querySelectorAll(".remove-block-btn").forEach((button) => {
+  blocksList.querySelectorAll(".remove-block-btn").forEach((button) => {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
 
@@ -733,6 +659,7 @@ async function createBlock(event) {
 
     blockForm.reset();
     await loadBlocks();
+
     alert("Bloqueio criado com sucesso.");
   } catch (error) {
     alert("Erro ao conectar ao servidor.");
@@ -782,8 +709,10 @@ loginForm.addEventListener("submit", async (event) => {
 
   try {
     await login(adminUser.value.trim(), adminPassword.value.trim());
+
     setLoginMessage("");
     showPanel();
+
     await loadAll();
   } catch (error) {
     setLoginMessage(error.message, "error");
@@ -799,6 +728,39 @@ logoutBtn.addEventListener("click", () => {
 });
 
 blockForm.addEventListener("submit", createBlock);
+
+historySearchInput.addEventListener("input", () => {
+  historySearch = historySearchInput.value;
+  resetCompletedPagination();
+  renderAppointments();
+});
+
+historyServiceFilter.addEventListener("change", () => {
+  historyService = historyServiceFilter.value;
+  resetCompletedPagination();
+  renderAppointments();
+});
+
+historyDateFilter.addEventListener("change", () => {
+  historyDate = historyDateFilter.value;
+  resetCompletedPagination();
+  renderAppointments();
+});
+
+resetHistoryFilters.addEventListener("click", () => {
+  historySearch = "";
+  historyService = "";
+  historyDate = "";
+
+  historySearchInput.value = "";
+  historyServiceFilter.value = "";
+  historyDateFilter.value = "";
+
+  resetCompletedPagination();
+  renderAppointments();
+});
+
+clearHistoryBtn.addEventListener("click", clearCompletedHistory);
 
 if (authHeader) {
   showPanel();
