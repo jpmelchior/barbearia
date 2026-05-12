@@ -71,7 +71,9 @@ function parseAppointmentDateTime(item) {
 
 function isCompletedAppointment(item) {
   const appointmentDateTime = parseAppointmentDateTime(item);
-  const completedLimit = new Date(appointmentDateTime.getTime() + 3 * 60 * 60 * 1000);
+  const completedLimit = new Date(
+    appointmentDateTime.getTime() + 3 * 60 * 60 * 1000
+  );
 
   return new Date() >= completedLimit;
 }
@@ -203,8 +205,17 @@ function renderAppointments() {
     appointments.filter((item) => isCompletedAppointment(item))
   ).reverse();
 
-  renderGroupedAppointments(appointmentsList, activeAppointments, "Nenhum horário futuro marcado.");
-  renderGroupedAppointments(completedList, completedAppointments, "Nenhum atendimento finalizado ainda.");
+  renderGroupedAppointments(
+    appointmentsList,
+    activeAppointments,
+    "Nenhum horário futuro marcado."
+  );
+
+  renderGroupedAppointments(
+    completedList,
+    completedAppointments,
+    "Nenhum atendimento finalizado ainda."
+  );
 }
 
 function renderGroupedAppointments(container, list, emptyMessage) {
@@ -515,6 +526,7 @@ refreshBtn.addEventListener("click", loadAll);
 
 logoutBtn.addEventListener("click", () => {
   authHeader = "";
+  localStorage.removeItem("adminAuth");
   showLogin();
 });
 
