@@ -1142,37 +1142,6 @@ select:focus{
   color:var(--muted);
   padding:12px 4px;
 }
-
-.floating-agenda{
-  position:fixed;
-  right:24px;
-  bottom:24px;
-  z-index:150;
-  min-width:124px;
-  min-height:52px;
-  display:grid;
-  place-items:center;
-  padding:0 20px;
-  border-radius:999px;
-  background:linear-gradient(135deg, var(--red3), var(--red2));
-  color:#fff;
-  text-decoration:none;
-  font-weight:950;
-  text-transform:uppercase;
-  letter-spacing:.8px;
-  box-shadow:0 18px 44px rgba(239,68,68,.34);
-  animation:floatingButton 4.2s ease-in-out infinite;
-}
-
-.floating-agenda::before{
-  content:"";
-  position:absolute;
-  inset:-8px;
-  border-radius:999px;
-  border:1px solid rgba(239,68,68,.32);
-  animation:pulseRing 2s ease-out infinite;
-}
-
 .footer{
   display:flex;
   justify-content:space-between;
