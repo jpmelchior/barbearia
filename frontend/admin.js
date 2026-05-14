@@ -119,6 +119,148 @@ function hideAdminNotice() {
   adminNotice.classList.add("hidden");
 }
 
+
+function getActionTexts(status) {
+  const map = {
+    completed: {
+      title: "Marcar como atendido?",
+      message: "Esse cliente será movido para o histórico como atendimento concluído.",
+      confirmText: "Marcar atendido",
+      variant: "success"
+    },
+    no_show: {
+      title: "Marcar como faltou?",
+      message: "Esse horário será enviado para o histórico como falta do cliente.",
+      confirmText: "Marcar falta",
+      variant: "warning"
+    },
+    cancelled: {
+      title: "Cancelar agendamento?",
+      message: "O horário será liberado e o registro ficará no histórico como cancelado.",
+      confirmText: "Cancelar agendamento",
+      variant: "danger"
+    },
+    scheduled: {
+      title: "Restaurar agendamento?",
+      message: "O registro voltará para a lista de horários marcados, se o horário ainda estiver livre.",
+      confirmText: "Restaurar",
+      variant: "info"
+    },
+    hidden: {
+      title: "Remover do histórico?",
+      message: "O registro será ocultado do histórico exibido no painel.",
+      confirmText: "Remover",
+      variant: "danger"
+    },
+    removeBlock: {
+      title: "Remover bloqueio?",
+      message: "Esse dia ou horário voltará a ficar disponível para agendamento.",
+      confirmText: "Remover bloqueio",
+      variant: "danger"
+    },
+    disableService: {
+      title: "Desativar serviço?",
+      message: "Esse serviço deixará de aparecer para o cliente no site.",
+      confirmText: "Desativar",
+      variant: "danger"
+    },
+    clearHistory: {
+      title: "Limpar histórico?",
+      message: "Os registros do histórico serão ocultados do painel. Essa ação não apaga os dados do banco imediatamente.",
+      confirmText: "Limpar histórico",
+      variant: "danger"
+    }
+  };
+
+  return map[status] || {
+    title: "Confirmar ação?",
+    message: "Deseja continuar com esta alteração?",
+    confirmText: "Confirmar",
+    variant: "info"
+  };
+}
+
+function ensureConfirmModal() {
+  let modal = document.getElementById("confirmModal");
+
+  if (modal) return modal;
+
+  modal = document.createElement("div");
+  modal.id = "confirmModal";
+  modal.className = "confirm-modal hidden";
+  modal.innerHTML = `
+    <div class="confirm-backdrop" data-confirm-cancel="true"></div>
+
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <span class="confirm-eyebrow">Confirmação</span>
+      <h2 id="confirmTitle">Confirmar ação?</h2>
+      <p id="confirmMessage">Deseja continuar?</p>
+
+      <div class="confirm-actions">
+        <button type="button" class="confirm-cancel" data-confirm-cancel="true">Voltar</button>
+        <button type="button" class="confirm-accept">Confirmar</button>
+      </div>
+    </section>
+  `;
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function showConfirmDialog({ title, message, confirmText = "Confirmar", variant = "info" }) {
+  const modal = ensureConfirmModal();
+  const dialog = modal.querySelector(".confirm-dialog");
+  const titleElement = modal.querySelector("#confirmTitle");
+  const messageElement = modal.querySelector("#confirmMessage");
+  const acceptButton = modal.querySelector(".confirm-accept");
+  const cancelElements = modal.querySelectorAll("[data-confirm-cancel]");
+
+  titleElement.textContent = title;
+  messageElement.textContent = message;
+  acceptButton.textContent = confirmText;
+  acceptButton.className = `confirm-accept ${variant}`;
+  dialog.className = `confirm-dialog ${variant}`;
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    function close(value) {
+      if (settled) return;
+
+      settled = true;
+      modal.classList.add("hidden");
+      document.body.classList.remove("modal-open");
+      acceptButton.removeEventListener("click", onAccept);
+      cancelElements.forEach((item) => item.removeEventListener("click", onCancel));
+      document.removeEventListener("keydown", onKeydown);
+      resolve(value);
+    }
+
+    function onAccept() {
+      close(true);
+    }
+
+    function onCancel() {
+      close(false);
+    }
+
+    function onKeydown(event) {
+      if (event.key === "Escape") {
+        close(false);
+      }
+    }
+
+    acceptButton.addEventListener("click", onAccept);
+    cancelElements.forEach((item) => item.addEventListener("click", onCancel));
+    document.addEventListener("keydown", onKeydown);
+
+    setTimeout(() => acceptButton.focus(), 50);
+  });
+}
+
 function handleUnauthorized(message = "Sua sessão expirou. Faça login novamente.") {
   clearAdminSession();
   showLogin();
@@ -537,9 +679,9 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
             <strong>${escapeHTML(item.phone)}</strong>
           </div>
 
-          <div>
+          <div class="status-cell">
             <small>Status</small>
-            <strong>${escapeHTML(getStatusLabel(status))}</strong>
+            <strong class="status-badge ${escapeHTML(status)}">${escapeHTML(getStatusLabel(status))}</strong>
           </div>
 
           <div class="card-actions">
@@ -586,17 +728,10 @@ function renderGroupedAppointments(container, list, emptyMessage, groupType) {
       const id = button.dataset.id;
       const status = button.dataset.status;
 
-      const messages = {
-        completed: "marcar este cliente como atendido",
-        no_show: "marcar este cliente como falta",
-        cancelled: "cancelar este agendamento",
-        scheduled: "restaurar este agendamento",
-        hidden: "remover este registro do histórico"
-      };
+      const actionTexts = getActionTexts(status);
+      const confirmed = await showConfirmDialog(actionTexts);
 
-      if (!confirm(`Deseja ${messages[status] || "alterar este registro"}?`)) {
-        return;
-      }
+      if (!confirmed) return;
 
       await updateAppointmentStatus(id, status);
     });
@@ -647,6 +782,7 @@ async function updateAppointmentStatus(id, status) {
     }
 
     await loadAppointments();
+    showAdminNotice(data.message || "Registro atualizado com sucesso.", "success");
   } catch (error) {
     showAdminNotice("Erro ao conectar ao servidor. Verifique se o backend está online.", "error");
   }
@@ -660,17 +796,12 @@ async function clearCompletedHistory() {
     return;
   }
 
-  const confirmed = confirm(
-    `Deseja remover ${historyAppointments.length} registro(s) do histórico? Essa ação apenas oculta os registros do painel.`
-  );
+  const confirmed = await showConfirmDialog({
+    ...getActionTexts("clearHistory"),
+    message: `Deseja ocultar ${historyAppointments.length} registro(s) do histórico exibido no painel?`
+  });
 
   if (!confirmed) return;
-
-  const secondConfirm = confirm(
-    "Confirma novamente? Os registros sairão do histórico exibido."
-  );
-
-  if (!secondConfirm) return;
 
   try {
     for (const item of historyAppointments) {
@@ -777,7 +908,9 @@ function renderBlocks() {
     button.addEventListener("click", async () => {
       const id = button.dataset.id;
 
-      if (!confirm("Deseja remover este bloqueio?")) return;
+      const confirmed = await showConfirmDialog(getActionTexts("removeBlock"));
+
+      if (!confirmed) return;
 
       await removeBlock(id);
     });
@@ -1053,9 +1186,12 @@ function renderServices() {
 
       if (!service) return;
 
-      if (!confirm(`Deseja desativar o serviço "${service.name}"?`)) {
-        return;
-      }
+      const confirmed = await showConfirmDialog({
+        ...getActionTexts("disableService"),
+        message: `O serviço "${service.name}" deixará de aparecer para o cliente no site.`
+      });
+
+      if (!confirmed) return;
 
       await disableService(service.id);
     });

@@ -1475,3 +1475,413 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   PAINEL ADMIN PREMIUM V2 — ALINHAMENTO + MODAL PROFISSIONAL
+   ========================================================= */
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.panel {
+  padding-bottom: 48px;
+}
+
+.panel-header,
+.tabs,
+.admin-grid,
+.admin-notice {
+  width: min(1440px, calc(100% - 48px));
+}
+
+.panel-header {
+  align-items: stretch;
+}
+
+.header-actions button,
+.header-actions .site-link,
+.card-header-actions button,
+.history-actions button,
+.full-export-btn,
+.service-form-actions button {
+  min-height: 46px;
+  padding: 11px 18px;
+  font-size: .74rem;
+}
+
+.admin-grid {
+  grid-template-columns: minmax(0, 1fr) 390px;
+}
+
+.card {
+  padding: 28px;
+}
+
+.card-header {
+  align-items: flex-start;
+}
+
+.card-header-actions {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  max-width: 460px;
+}
+
+.day-group {
+  padding: 18px;
+  border-radius: 26px;
+  background: rgba(8, 8, 10, .52);
+  border: 1px solid rgba(255, 255, 255, .09);
+}
+
+.day-header {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  padding: 18px;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(8,8,10,.92), rgba(22,22,28,.82));
+}
+
+.day-info-area span,
+.day-pagination span,
+.history-summary span {
+  color: #fecaca;
+  background: rgba(239, 68, 68, .10);
+  border-color: rgba(239, 68, 68, .24);
+}
+
+.appointment-card {
+  grid-template-columns: 138px minmax(120px, .85fr) minmax(180px, 1.25fr) minmax(130px, .85fr) 118px 148px;
+  gap: 14px;
+  align-items: stretch;
+  padding: 14px;
+  border-radius: 24px;
+  border-left: 5px solid var(--red2);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.068), rgba(255,255,255,.024));
+}
+
+.appointment-card > div:not(.card-actions):not(.time-box) {
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 12px;
+  border-radius: 18px;
+  background: rgba(8, 8, 10, .26);
+  border: 1px solid rgba(255,255,255,.055);
+}
+
+.appointment-card small,
+.block-card small {
+  color: #9f9faf;
+  letter-spacing: 1.2px;
+}
+
+.appointment-card strong,
+.block-card strong {
+  font-size: .95rem;
+}
+
+.time-box {
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(8,8,10,.72);
+}
+
+.time-box strong {
+  font-size: 1.62rem;
+}
+
+.card-actions {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.card-actions button,
+.cancel-btn,
+.remove-block-btn,
+.status-btn {
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-size: .72rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.done-btn,
+.restore-btn {
+  background: rgba(34, 197, 94, .13);
+  color: #dcfce7;
+  border: 1px solid rgba(34, 197, 94, .28);
+}
+
+.done-btn:hover,
+.restore-btn:hover {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.no-show-btn {
+  background: rgba(245, 158, 11, .12);
+  color: #fef3c7;
+  border: 1px solid rgba(245, 158, 11, .30);
+}
+
+.no-show-btn:hover {
+  background: linear-gradient(135deg, #92400e, #f59e0b);
+}
+
+.cancel-btn,
+.remove-block-btn,
+.disable-service-btn {
+  background: rgba(239, 68, 68, .11);
+  color: #fee2e2;
+  border: 1px solid rgba(239, 68, 68, .30);
+}
+
+.cancel-btn:hover,
+.remove-block-btn:hover,
+.disable-service-btn:hover {
+  background: linear-gradient(135deg, #7f1d1d, #ef4444);
+}
+
+.status-badge {
+  width: max-content;
+  max-width: 100%;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: .75rem !important;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  line-height: 1.1 !important;
+}
+
+.status-badge.scheduled {
+  color: #dbeafe;
+  background: rgba(59, 130, 246, .13);
+  border: 1px solid rgba(59, 130, 246, .26);
+}
+
+.status-badge.completed {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, .13);
+  border: 1px solid rgba(34, 197, 94, .26);
+}
+
+.status-badge.cancelled,
+.status-badge.hidden {
+  color: #fee2e2;
+  background: rgba(239, 68, 68, .13);
+  border: 1px solid rgba(239, 68, 68, .26);
+}
+
+.status-badge.no_show {
+  color: #fef3c7;
+  background: rgba(245, 158, 11, .13);
+  border: 1px solid rgba(245, 158, 11, .26);
+}
+
+.block-card,
+.service-admin-card,
+.business-hour-card {
+  border-radius: 22px !important;
+}
+
+.block-card {
+  grid-template-columns: 1fr 1fr minmax(150px, 1.4fr) 120px;
+  align-items: stretch;
+}
+
+.block-card > div,
+.service-admin-card > div {
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(8, 8, 10, .25);
+  border: 1px solid rgba(255,255,255,.055);
+}
+
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .70);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: modalFade .18s ease both;
+}
+
+.confirm-dialog {
+  position: relative;
+  z-index: 2;
+  width: min(480px, 100%);
+  padding: 28px;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(239, 68, 68, .16), transparent 34%),
+    linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.04)),
+    #111116;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 35px 120px rgba(0,0,0,.62);
+  animation: modalPop .22s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.confirm-dialog.success {
+  border-color: rgba(34, 197, 94, .28);
+}
+
+.confirm-dialog.warning {
+  border-color: rgba(245, 158, 11, .30);
+}
+
+.confirm-dialog.danger {
+  border-color: rgba(239, 68, 68, .34);
+}
+
+.confirm-eyebrow {
+  display: inline-flex;
+  margin-bottom: 14px;
+  color: #fecaca;
+  font-size: .72rem;
+  font-weight: 950;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.confirm-dialog h2 {
+  margin-bottom: 12px;
+  font-family: Georgia, serif;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.confirm-dialog p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.confirm-cancel {
+  background: rgba(8, 8, 10, .76);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: none;
+}
+
+.confirm-accept.success {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.confirm-accept.warning {
+  background: linear-gradient(135deg, #92400e, #f59e0b);
+}
+
+.confirm-accept.danger {
+  background: linear-gradient(135deg, #7f1d1d, #ef4444);
+}
+
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1280px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-card {
+    grid-template-columns: 130px 1fr 1.3fr 1fr 118px;
+  }
+
+  .appointment-card .card-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .panel-header,
+  .tabs,
+  .admin-grid,
+  .admin-notice {
+    width: min(100% - 28px, 1440px);
+  }
+
+  .card {
+    padding: 22px 16px;
+  }
+
+  .card-header,
+  .history-top {
+    display: grid;
+  }
+
+  .card-header-actions,
+  .history-actions {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .day-header {
+    grid-template-columns: 1fr;
+  }
+
+  .day-info-area {
+    justify-content: flex-start;
+  }
+
+  .appointment-card,
+  .block-card {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-card > div:not(.card-actions):not(.time-box),
+  .time-box {
+    min-height: auto;
+  }
+
+  .appointment-card .card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .confirm-actions {
+    grid-template-columns: 1fr;
+  }
+}
