@@ -19,12 +19,35 @@ const dateInput = document.getElementById("date");
 const timeInput = document.getElementById("time");
 
 let currentPage = 0;
-const DAYS_PER_PAGE = 15;
+let lastDeviceMode = getDeviceMode();
+
+let loadedTimes = [];
+let timesPage = 0;
+
+const DESKTOP_PAGE_SIZE = 10;
+const MOBILE_PAGE_SIZE = 5;
+const MOBILE_BREAKPOINT = 760;
 
 const weekdayFormatter = new Intl.DateTimeFormat("pt-BR", {
   weekday: "short",
   timeZone: "America/Sao_Paulo"
 });
+
+function isMobileLayout() {
+  return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
+}
+
+function getDeviceMode() {
+  return isMobileLayout() ? "mobile" : "desktop";
+}
+
+function getDaysPerPage() {
+  return isMobileLayout() ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
+}
+
+function getTimesPerPage() {
+  return isMobileLayout() ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
+}
 
 function generateDeviceId() {
   const cryptoApi = window.crypto || window.msCrypto;
@@ -89,6 +112,26 @@ function setupHeaderAndProgress() {
   update();
   window.addEventListener("scroll", update, { passive: true });
   window.addEventListener("resize", update);
+}
+
+function setupResponsivePaginationWatcher() {
+  let resizeTimer = null;
+
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(() => {
+      const currentMode = getDeviceMode();
+
+      if (currentMode !== lastDeviceMode) {
+        lastDeviceMode = currentMode;
+        currentPage = 0;
+        timesPage = 0;
+        resetSelectedTime();
+        generateDays();
+      }
+    }, 250);
+  });
 }
 
 function setupImageFallbacks() {
@@ -181,6 +224,8 @@ async function loadServices() {
 }
 
 function setEmptyTimes(text) {
+  loadedTimes = [];
+  timesPage = 0;
   timesContainer.innerHTML = "";
 
   const emptyText = document.createElement("p");
@@ -189,18 +234,32 @@ function setEmptyTimes(text) {
   emptyText.textContent = text;
 
   timesContainer.appendChild(emptyText);
+
+  removeTimesPaginationControls();
 }
 
-function createPaginationControls() {
-  const oldControls = document.querySelector(".pagination-controls");
+function removeDaysPaginationControls() {
+  const oldControls = document.querySelector(".days-pagination-controls");
 
   if (oldControls) {
     oldControls.remove();
   }
+}
+
+function removeTimesPaginationControls() {
+  const oldControls = document.querySelector(".times-pagination-controls");
+
+  if (oldControls) {
+    oldControls.remove();
+  }
+}
+
+function createDaysPaginationControls() {
+  removeDaysPaginationControls();
 
   const controls = document.createElement("div");
 
-  controls.className = "pagination-controls";
+  controls.className = "pagination-controls days-pagination-controls";
 
   const prevButton = document.createElement("button");
 
@@ -211,7 +270,7 @@ function createPaginationControls() {
   const indicator = document.createElement("div");
 
   indicator.className = "pagination-indicator";
-  indicator.textContent = `Página ${currentPage + 1}`;
+  indicator.textContent = `Página ${currentPage + 1} • ${getDaysPerPage()} dias`;
 
   const nextButton = document.createElement("button");
 
@@ -245,6 +304,69 @@ function createPaginationControls() {
   controls.appendChild(nextButton);
 
   daysContainer.after(controls);
+}
+
+function createTimesPaginationControls(totalPages) {
+  removeTimesPaginationControls();
+
+  if (totalPages <= 1) {
+    return;
+  }
+
+  const controls = document.createElement("div");
+
+  controls.className = "pagination-controls times-pagination-controls";
+
+  const prevButton = document.createElement("button");
+
+  prevButton.type = "button";
+  prevButton.className = "pagination-btn";
+  prevButton.textContent = "← Horários anteriores";
+
+  const indicator = document.createElement("div");
+
+  indicator.className = "pagination-indicator";
+  indicator.textContent = `Página ${timesPage + 1} de ${totalPages} • ${getTimesPerPage()} horários`;
+
+  const nextButton = document.createElement("button");
+
+  nextButton.type = "button";
+  nextButton.className = "pagination-btn";
+  nextButton.textContent = "Próximos horários →";
+
+  if (timesPage === 0) {
+    prevButton.disabled = true;
+    prevButton.classList.add("disabled");
+  }
+
+  if (timesPage >= totalPages - 1) {
+    nextButton.disabled = true;
+    nextButton.classList.add("disabled");
+  }
+
+  prevButton.addEventListener("click", () => {
+    if (timesPage > 0) {
+      timesPage--;
+      timeInput.value = "";
+      renderTimesPage();
+      timesContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+
+  nextButton.addEventListener("click", () => {
+    if (timesPage < totalPages - 1) {
+      timesPage++;
+      timeInput.value = "";
+      renderTimesPage();
+      timesContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+
+  controls.appendChild(prevButton);
+  controls.appendChild(indicator);
+  controls.appendChild(nextButton);
+
+  timesContainer.after(controls);
 }
 
 function resetSelectedTime() {
@@ -290,6 +412,7 @@ function createDayButton(dayInfo) {
 
     dateInput.value = dateString;
     timeInput.value = "";
+    timesPage = 0;
 
     loadTimes(dateString);
   });
@@ -300,11 +423,7 @@ function createDayButton(dayInfo) {
 async function generateDays() {
   daysContainer.innerHTML = "";
 
-  const oldControls = document.querySelector(".pagination-controls");
-
-  if (oldControls) {
-    oldControls.remove();
-  }
+  removeDaysPaginationControls();
 
   const loadingText = document.createElement("p");
   loadingText.className = "empty-text";
@@ -314,7 +433,7 @@ async function generateDays() {
   try {
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: String(DAYS_PER_PAGE)
+      limit: String(getDaysPerPage())
     });
 
     const response = await fetch(`${API_URL}/days?${params.toString()}`);
@@ -340,7 +459,7 @@ async function generateDays() {
       daysContainer.appendChild(dayButton);
     });
 
-    createPaginationControls();
+    createDaysPaginationControls();
   } catch (error) {
     console.error("Erro ao carregar dias disponíveis:", error);
 
@@ -390,6 +509,43 @@ function createTimeButton(time, available, reason) {
   return button;
 }
 
+function renderTimesPage() {
+  timesContainer.innerHTML = "";
+
+  const perPage = getTimesPerPage();
+  const totalPages = Math.ceil(loadedTimes.length / perPage);
+  const safePage = Math.min(timesPage, Math.max(totalPages - 1, 0));
+
+  timesPage = safePage;
+
+  const start = timesPage * perPage;
+  const end = start + perPage;
+  const visibleTimes = loadedTimes.slice(start, end);
+
+  if (!visibleTimes.length) {
+    setEmptyTimes("Nenhum horário disponível para este dia.");
+    return;
+  }
+
+  visibleTimes.forEach((item) => {
+    let time = item;
+    let available = true;
+    let reason = "Horário indisponível";
+
+    if (typeof item === "object" && item !== null) {
+      time = item.time;
+      available = item.available !== false;
+      reason = item.reason || reason;
+    }
+
+    const button = createTimeButton(time, Boolean(time) && available, reason);
+
+    timesContainer.appendChild(button);
+  });
+
+  createTimesPaginationControls(totalPages);
+}
+
 async function loadTimes(date) {
   setEmptyTimes("Carregando horários...");
   timesContainer.setAttribute("aria-busy", "true");
@@ -405,31 +561,16 @@ async function loadTimes(date) {
 
     const data = await response.json();
 
-    timesContainer.innerHTML = "";
-
     const rawTimes = data.times || data.available || [];
-    const times = Array.isArray(rawTimes) ? rawTimes : [];
+    loadedTimes = Array.isArray(rawTimes) ? rawTimes : [];
+    timesPage = 0;
 
-    if (!times.length) {
+    if (!loadedTimes.length) {
       setEmptyTimes("Nenhum horário disponível para este dia.");
       return;
     }
 
-    times.forEach((item) => {
-      let time = item;
-      let available = true;
-      let reason = "Horário indisponível";
-
-      if (typeof item === "object" && item !== null) {
-        time = item.time;
-        available = item.available !== false;
-        reason = item.reason || reason;
-      }
-
-      const button = createTimeButton(time, Boolean(time) && available, reason);
-
-      timesContainer.appendChild(button);
-    });
+    renderTimesPage();
   } catch (error) {
     console.error("Erro ao carregar horários:", error);
     setEmptyTimes("Erro ao carregar horários. Tente novamente.");
@@ -569,6 +710,7 @@ async function initializePage() {
   setupPageLoader();
   setupHeaderAndProgress();
   setupImageFallbacks();
+  setupResponsivePaginationWatcher();
   getDeviceId();
   setupRevealAnimations();
   await loadServices();
