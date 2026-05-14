@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>BARBEARIA PRIME - Painel Admin</title>
+
+  <meta
+    name="description"
+    content="Painel administrativo da Barbearia Prime para gerenciar agendamentos, histórico e bloqueios de horários."
+  />
+
+  <meta name="theme-color" content="#08080a" />
+
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+  <main class="admin-container">
+
+    <!-- LOGIN -->
+    <section class="login-screen" id="loginBox">
+      <div class="login-shell">
+
+        <a
+          href="https://barbearia-sigma-henna.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="brand-button"
+        >
+          BARBEARIA PRIME
+        </a>
+
+        <div class="login-card">
+          <span class="eyebrow">Painel Administrativo</span>
+
+          <h1>Entrar no painel</h1>
+
+          <p>
+            Acesse para visualizar horários, cancelar agendamentos,
+            bloquear dias e consultar histórico de clientes.
+          </p>
+
+          <form id="loginForm" class="login-form">
+            <label for="adminUser">
+              Usuário
+              <input
+                type="text"
+                id="adminUser"
+                placeholder="Digite o usuário"
+                autocomplete="username"
+                required
+              />
+            </label>
+
+            <label for="adminPassword">
+              Senha
+              <input
+                type="password"
+                id="adminPassword"
+                placeholder="Digite a senha"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+
+            <button type="submit">
+              Entrar no painel
+            </button>
+          </form>
+
+          <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PAINEL -->
+    <section class="panel hidden" id="adminPanel">
+
+      <header class="panel-header">
+        <div>
+          <span class="eyebrow">Gestão da barbearia</span>
+
+          <h1>Painel Admin</h1>
+
+          <p>
+            Controle agendamentos, visualize clientes atendidos e bloqueie horários indisponíveis.
+          </p>
+        </div>
+
+        <div class="header-actions">
+          <a
+            href="https://barbearia-sigma-henna.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="site-link"
+          >
+            Ver site
+          </a>
+
+          <button type="button" id="refreshBtn" class="secondary-btn">
+            Atualizar
+          </button>
+
+          <button type="button" id="logoutBtn" class="logout">
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <div id="adminNotice" class="admin-notice hidden" role="status" aria-live="polite"></div>
+
+      <nav class="tabs" aria-label="Abas do painel">
+        <button type="button" class="tab active" data-tab="scheduled">
+          Horários marcados
+        </button>
+
+        <button type="button" class="tab" data-tab="completed">
+          Histórico de clientes
+        </button>
+
+        <button type="button" class="tab" data-tab="services">
+          Serviços e preços
+        </button>
+
+        <button type="button" class="tab" data-tab="business-hours">
+          Funcionamento
+        </button>
+      </nav>
+
+      <div class="admin-grid">
+
+        <!-- COLUNA PRINCIPAL -->
+        <section class="main-column">
+
+          <!-- AGENDAMENTOS -->
+          <section class="card" id="scheduledSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Agenda</span>
+                <h2>Horários marcados</h2>
+              </div>
+
+              <div class="card-header-actions">
+                <p>
+                  Cada dia mostra até 5 horários por página. Caso ultrapasse isso,
+                  use a paginação do próprio dia.
+                </p>
+
+                <button type="button" id="exportScheduledBtn" class="export-btn">
+                  Exportar agendamentos
+                </button>
+              </div>
+            </div>
+
+            <div id="appointmentsList" class="appointments-list">
+              <p class="empty">Carregando horários...</p>
+            </div>
+          </section>
+
+          <!-- HISTÓRICO -->
+          <section class="card hidden" id="completedSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Histórico</span>
+                <h2>Clientes atendidos</h2>
+              </div>
+
+              <p>
+                Consulte atendimentos finalizados filtrando apenas por data.
+              </p>
+            </div>
+
+            <div class="history-tools" id="historyTools">
+
+              <div class="history-top">
+                <div>
+                  <h3>Filtrar por data</h3>
+
+                  <p>
+                    Consulte clientes atendidos escolhendo uma data específica
+                    ou usando os atalhos rápidos.
+                  </p>
+                </div>
+
+                <div class="history-actions">
+                  <button type="button" id="exportHistoryBtn" class="export-btn">
+                    Exportar histórico
+                  </button>
+
+                  <button type="button" id="clearHistoryBtn" class="danger-soft-btn">
+                    Limpar histórico
+                  </button>
+                </div>
+              </div>
+
+              <div class="date-filter-panel">
+
+                <div class="date-shortcuts">
+                  <button type="button" class="date-filter-btn active" data-filter="all">
+                    Todos
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="today">
+                    Hoje
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="yesterday">
+                    Ontem
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="last7">
+                    Últimos 7 dias
+                  </button>
+
+                  <button type="button" class="date-filter-btn" data-filter="month">
+                    Este mês
+                  </button>
+                </div>
+
+                <div class="manual-date-filter">
+                  <label for="historyDateFilter">
+                    Escolher data específica
+                    <input type="date" id="historyDateFilter" />
+                  </label>
+
+                  <button type="button" id="resetHistoryFilters" class="secondary-btn">
+                    Limpar data
+                  </button>
+                </div>
+
+              </div>
+
+              <div class="history-summary">
+                <span id="historyTotal">Total atendidos: 0</span>
+                <span id="historyResult">Resultado atual: 0</span>
+              </div>
+
+            </div>
+
+            <div id="completedList" class="appointments-list">
+              <p class="empty">Carregando histórico...</p>
+            </div>
+          </section>
+
+          <!-- SERVIÇOS -->
+          <section class="card hidden" id="servicesSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Serviços</span>
+                <h2>Serviços e preços</h2>
+              </div>
+
+              <p>
+                Cadastre, edite, ative ou desative os serviços que aparecem no site do cliente.
+              </p>
+            </div>
+
+            <form id="serviceForm" class="service-form">
+              <input type="hidden" id="serviceId" />
+
+              <label for="serviceName">
+                Nome do serviço
+                <input
+                  type="text"
+                  id="serviceName"
+                  placeholder="Ex: Corte Masculino"
+                  maxlength="80"
+                  required
+                />
+              </label>
+
+              <label for="servicePrice">
+                Preço
+                <input
+                  type="number"
+                  id="servicePrice"
+                  placeholder="35"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </label>
+
+              <label for="serviceActive" class="checkbox-label">
+                <input type="checkbox" id="serviceActive" checked />
+                Serviço ativo no site
+              </label>
+
+              <div class="service-form-actions">
+                <button type="submit" id="saveServiceBtn">
+                  Salvar serviço
+                </button>
+
+                <button type="button" id="cancelServiceEditBtn" class="secondary-btn hidden">
+                  Cancelar edição
+                </button>
+              </div>
+            </form>
+
+            <div class="info-box service-info-box">
+              <strong>Serviços iniciais</strong>
+              <p>
+                O sistema cria automaticamente: Corte Masculino R$ 35,00,
+                Barba R$ 25,00 e Barba + Corte R$ 50,00.
+              </p>
+            </div>
+
+            <div id="servicesList" class="services-admin-list">
+              <p class="empty">Carregando serviços...</p>
+            </div>
+          </section>
+
+          <!-- FUNCIONAMENTO -->
+          <section class="card hidden" id="businessHoursSection">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Horários</span>
+                <h2>Funcionamento semanal</h2>
+              </div>
+
+              <p>
+                Defina quais dias a barbearia abre e o horário de atendimento de cada dia.
+              </p>
+            </div>
+
+            <div class="info-box service-info-box">
+              <strong>Importante</strong>
+              <p>
+                Os horários são gerados de 1 em 1 hora. Se um dia estiver fechado,
+                ele não aparece para o cliente no agendamento.
+              </p>
+            </div>
+
+            <form id="businessHoursForm" class="business-hours-form">
+              <div id="businessHoursList" class="business-hours-list">
+                <p class="empty">Carregando funcionamento...</p>
+              </div>
+
+              <button type="submit" id="saveBusinessHoursBtn">
+                Salvar funcionamento
+              </button>
+            </form>
+          </section>
+
+
+        </section>
+
+        <!-- COLUNA LATERAL -->
+        <aside class="side-column">
+
+          <section class="card">
+            <div class="card-header compact">
+              <div>
+                <span class="eyebrow">Bloqueios</span>
+                <h2>Bloquear horário</h2>
+              </div>
+
+              <p>
+                Use para viagens, imprevistos, folgas ou horários indisponíveis.
+              </p>
+            </div>
+
+            <form id="blockForm" class="block-form">
+
+              <label for="blockDate">
+                Data inicial
+                <input type="date" id="blockDate" required />
+              </label>
+
+              <label for="blockEndDate">
+                Data final
+                <input type="date" id="blockEndDate" />
+              </label>
+
+              <label for="blockTime">
+                Horário
+                <input type="time" id="blockTime" />
+              </label>
+
+              <label for="blockReason">
+                Motivo
+                <input
+                  type="text"
+                  id="blockReason"
+                  placeholder="Ex: viagem, compromisso, manutenção..."
+                  maxlength="100"
+                  required
+                />
+              </label>
+
+              <button type="submit">
+                Criar bloqueio
+              </button>
+
+            </form>
+
+            <div class="info-box">
+              <strong>Dica</strong>
+              <p>
+                Deixe o horário vazio para bloquear o dia inteiro. Para bloquear apenas um dia,
+                deixe a data final vazia.
+              </p>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header compact">
+              <div>
+                <span class="eyebrow">Lista</span>
+                <h2>Bloqueios ativos</h2>
+              </div>
+
+              <p>
+                Remova bloqueios quando o horário voltar a ficar disponível.
+              </p>
+
+              <button type="button" id="exportBlocksBtn" class="export-btn full-export-btn">
+                Exportar bloqueios
+              </button>
+            </div>
+
+            <div id="blocksList" class="blocks-list">
+              <p class="empty">Carregando bloqueios...</p>
+            </div>
+          </section>
+
+        </aside>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
