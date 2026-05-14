@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Barbearia Prime: cortes masculinos, degradê profissional, barba alinhada e agendamento online." />
-  <meta name="theme-color" content="#050505" />
+
+  <meta
+    name="description"
+    content="Barbearia Prime: cortes masculinos, degradê profissional, barba alinhada e agendamento online."
+  />
+  <meta name="theme-color" content="#08080a" />
   <meta property="og:title" content="Barbearia Prime" />
   <meta property="og:description" content="Estilo, presença e respeito em cada atendimento." />
   <meta property="og:type" content="website" />
@@ -16,12 +20,24 @@
 </head>
 <body>
 
+<div class="page-loader" id="pageLoader" aria-hidden="true">
+  <div class="loader-box">
+    <div class="loader-mark">BP</div>
+    <span>Carregando experiência</span>
+  </div>
+</div>
+
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
-<header class="header">
+<header class="header" id="header">
   <a class="logo" href="#inicio" aria-label="Barbearia Prime - início">
-    <span class="logo-mark">B</span>
-    <span class="logo-text">BARBEARIA PRIME</span>
+    <span class="logo-mark">BP</span>
+    <span class="logo-text">
+      <strong>BARBEARIA</strong>
+      <small>PRIME</small>
+    </span>
   </a>
 
   <nav class="nav" aria-label="Navegação principal">
@@ -34,11 +50,12 @@
 
 <main id="conteudo">
   <section class="hero" id="inicio" aria-labelledby="hero-title">
-    <div class="hero-overlay" aria-hidden="true"></div>
-    <div class="hero-particles" aria-hidden="true"></div>
+    <div class="hero-bg-glow" aria-hidden="true"></div>
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-noise" aria-hidden="true"></div>
 
-    <div class="hero-content">
-      <span class="tag">Barbearia Premium</span>
+    <div class="hero-content reveal">
+      <span class="eyebrow">Barbearia Premium</span>
 
       <h1 id="hero-title">
         ESTILO.<br />
@@ -47,104 +64,113 @@
       </h1>
 
       <p>
-        Cortes modernos, degradê profissional, barba alinhada
-        e atendimento premium para quem exige qualidade de verdade.
+        Cortes modernos, degradê profissional, barba alinhada e atendimento
+        premium para quem valoriza presença, cuidado e acabamento de alto nível.
       </p>
 
       <div class="hero-actions">
-        <a href="#agendamento" class="hero-button">
-          AGENDAR HORÁRIO
+        <a href="#agendamento" class="btn btn-primary">
+          Agendar horário
         </a>
 
-        <a href="#servicos" class="hero-button hero-button-outline">
-          VER SERVIÇOS
+        <a href="#servicos" class="btn btn-secondary">
+          Ver serviços
         </a>
       </div>
 
-      <div class="hero-metrics">
-        <div class="hero-metric reveal">
+      <div class="trust-row" aria-label="Diferenciais rápidos">
+        <div class="trust-card">
           <strong>Premium</strong>
-          <span>Atendimento de alto nível</span>
+          <span>Atendimento refinado</span>
         </div>
 
-        <div class="hero-metric reveal">
-          <strong>Seg. a Sex.</strong>
-          <span>08:00 às 20:00</span>
+        <div class="trust-card">
+          <strong>08h às 20h</strong>
+          <span>Segunda a sexta</span>
         </div>
 
-        <div class="hero-metric reveal">
+        <div class="trust-card">
           <strong>Online</strong>
           <span>Agendamento rápido</span>
         </div>
       </div>
     </div>
+
+    <aside class="hero-panel reveal" aria-label="Resumo da Barbearia Prime">
+      <div class="panel-badge">Agenda inteligente</div>
+
+      <h2>Seu horário sem complicação.</h2>
+
+      <p>
+        Escolha serviço, dia e horário. Os horários indisponíveis são bloqueados
+        automaticamente.
+      </p>
+
+      <div class="panel-list">
+        <span>Corte masculino</span>
+        <span>Barba alinhada</span>
+        <span>Degradê profissional</span>
+      </div>
+    </aside>
   </section>
 
-  <section class="section" id="sobre" aria-labelledby="sobre-title">
+  <section class="section about-section" id="sobre" aria-labelledby="sobre-title">
     <div class="section-text reveal">
-      <span class="tag">Sobre nós</span>
+      <span class="eyebrow">Sobre nós</span>
 
       <h2 id="sobre-title">
-        Experiência profissional em cada detalhe
+        Uma experiência de barbearia feita nos detalhes
       </h2>
 
       <p>
-        Nossa barbearia foi criada para oferecer um ambiente premium,
-        moderno e confortável, focado em cortes de alta qualidade,
-        barba, acabamento e atendimento profissional.
+        A Barbearia Prime foi criada para entregar um atendimento moderno,
+        confortável e direto ao ponto: visual alinhado, acabamento limpo e
+        experiência profissional desde o agendamento até o atendimento.
       </p>
-
-      <div class="mini-cards">
-        <article class="mini-card reveal">
-          <strong>Visual moderno</strong>
-          <span>Ambiente elegante e confortável.</span>
-        </article>
-
-        <article class="mini-card reveal">
-          <strong>Precisão</strong>
-          <span>Acabamento limpo e atenção aos detalhes.</span>
-        </article>
-
-        <article class="mini-card reveal">
-          <strong>Praticidade</strong>
-          <span>Agende online em poucos segundos.</span>
-        </article>
-      </div>
     </div>
 
-    <div class="info-stack">
-      <aside class="info-card reveal" aria-label="Horário de funcionamento">
-        <h3>Funcionamento</h3>
-        <p>Segunda a Sexta</p>
-        <strong>08:00 às 20:00</strong>
-      </aside>
+    <div class="about-grid">
+      <article class="about-card reveal">
+        <span class="card-number">01</span>
+        <h3>Ambiente premium</h3>
+        <p>Visual moderno, atendimento organizado e experiência mais confortável.</p>
+      </article>
 
-      <aside class="info-card secondary reveal" aria-label="Diferenciais da barbearia">
-        <h3>Diferenciais</h3>
-        <ul class="feature-list">
-          <li>Corte com acabamento profissional</li>
-          <li>Barba alinhada com visual refinado</li>
-          <li>Agendamento simples e rápido</li>
-        </ul>
-      </aside>
+      <article class="about-card reveal">
+        <span class="card-number">02</span>
+        <h3>Acabamento limpo</h3>
+        <p>Corte, barba e degradê com atenção ao detalhe e ao estilo do cliente.</p>
+      </article>
+
+      <article class="about-card reveal">
+        <span class="card-number">03</span>
+        <h3>Agenda online</h3>
+        <p>Escolha seu horário com praticidade, sem conversa longa e sem confusão.</p>
+      </article>
     </div>
+
+    <aside class="hours-card reveal" aria-label="Horário de funcionamento">
+      <span>Funcionamento</span>
+      <strong>Segunda a Sexta</strong>
+      <p>08:00 às 20:00</p>
+    </aside>
   </section>
 
   <section class="services" id="servicos" aria-labelledby="servicos-title">
-    <span class="tag reveal">Serviços</span>
-
-    <h2 id="servicos-title" class="reveal">Nossos serviços</h2>
-
-    <p class="section-description reveal">
-      Escolha o serviço ideal e tenha uma experiência de barbearia
-      com visual premium, conforto e resultado profissional.
-    </p>
+    <div class="section-heading reveal">
+      <span class="eyebrow">Serviços</span>
+      <h2 id="servicos-title">Nossos serviços</h2>
+      <p>
+        Serviços essenciais para manter o visual alinhado, moderno e com presença.
+      </p>
+    </div>
 
     <div class="services-grid">
       <article class="service-card reveal">
-        <div class="service-image-wrapper">
+        <div class="service-image">
           <img
             src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1200&q=80"
+            data-fallback="https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=1200&q=80"
             alt="Barbeiro finalizando corte masculino"
             width="1200"
             height="800"
@@ -154,16 +180,18 @@
         </div>
 
         <div class="service-content">
+          <span>01</span>
           <h3>Corte Masculino</h3>
-          <p>Corte moderno com acabamento profissional e presença marcante.</p>
+          <p>Corte moderno com acabamento profissional, alinhado ao seu estilo.</p>
         </div>
       </article>
 
-      <article class="service-card reveal">
-        <div class="service-image-wrapper">
+      <article class="service-card reveal featured">
+        <div class="service-image">
           <img
-            src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80"
-            alt="Barba sendo alinhada com acabamento profissional"
+            src="https://images.unsplash.com/photo-1622287162716-f311baa1a2b8?auto=format&fit=crop&w=1200&q=80"
+            data-fallback="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=80"
+            alt="Barba sendo alinhada em barbearia"
             width="1200"
             height="800"
             loading="lazy"
@@ -172,16 +200,18 @@
         </div>
 
         <div class="service-content">
+          <span>02</span>
           <h3>Barba</h3>
           <p>Alinhamento, modelagem e acabamento para um visual mais forte.</p>
         </div>
       </article>
 
       <article class="service-card reveal">
-        <div class="service-image-wrapper">
+        <div class="service-image">
           <img
             src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80"
-            alt="Ambiente de barbearia com cadeira e ferramentas de corte"
+            data-fallback="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80"
+            alt="Ambiente de barbearia com cadeira e ferramentas"
             width="1200"
             height="800"
             loading="lazy"
@@ -190,8 +220,9 @@
         </div>
 
         <div class="service-content">
+          <span>03</span>
           <h3>Degradê</h3>
-          <p>Degradê limpo, sombreado, moderno e com acabamento de alto nível.</p>
+          <p>Degradê limpo, sombreado e moderno, com acabamento de alto nível.</p>
         </div>
       </article>
     </div>
@@ -199,7 +230,7 @@
 
   <section class="booking" id="agendamento" aria-labelledby="agendamento-title">
     <div class="booking-left reveal">
-      <span class="tag">Agendamento Online</span>
+      <span class="eyebrow">Agendamento Online</span>
 
       <h2 id="agendamento-title">
         Escolha seu horário
@@ -207,22 +238,28 @@
 
       <p>
         Horários ocupados ou bloqueados ficam indisponíveis automaticamente.
-        Escolha seu serviço, selecione o dia e finalize em poucos segundos.
+        Preencha seus dados, escolha o serviço, selecione o dia e confirme.
       </p>
 
-      <div class="booking-highlight">
-        <div class="booking-highlight-item">
+      <div class="booking-benefits">
+        <div>
           <strong>Rápido</strong>
-          <span>Processo simples e direto</span>
+          <span>Agendamento em poucos segundos</span>
         </div>
-        <div class="booking-highlight-item">
-          <strong>Seguro</strong>
-          <span>Horários controlados automaticamente</span>
+
+        <div>
+          <strong>Organizado</strong>
+          <span>Controle automático de horários</span>
         </div>
       </div>
     </div>
 
     <form id="appointmentForm" class="booking-form reveal" autocomplete="on">
+      <div class="form-topline">
+        <span>Agende agora</span>
+        <small>Preencha os campos abaixo</small>
+      </div>
+
       <div class="field">
         <label for="name">Nome</label>
         <input
@@ -297,7 +334,7 @@
       <input type="hidden" id="time" name="time" />
 
       <button type="submit" class="submit-btn">
-        CONFIRMAR AGENDAMENTO
+        Confirmar agendamento
       </button>
 
       <p id="message" role="status" aria-live="polite"></p>
@@ -305,11 +342,19 @@
   </section>
 </main>
 
+<a class="floating-agenda" href="#agendamento" aria-label="Ir para agendamento">
+  <span>Agendar</span>
+</a>
+
 <footer class="footer">
   <p>© 2026 Barbearia Prime</p>
-  <a href="admin.html">Painel admin</a>
+
+  <div class="footer-links">
+    <a href="#inicio">Voltar ao topo</a>
+    <a href="admin.html">Painel admin</a>
+  </div>
 </footer>
 
-<script src="script.js?v=4"></script>
+<script src="script.js?v=5"></script>
 </body>
 </html>

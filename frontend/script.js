@@ -7,7 +7,9 @@ const daysContainer = document.getElementById("daysContainer");
 const timesContainer = document.getElementById("timesContainer");
 const message = document.getElementById("message");
 const submitButton = form.querySelector(".submit-btn");
-const header = document.querySelector(".header");
+
+const header = document.getElementById("header") || document.querySelector(".header");
+const scrollProgress = document.getElementById("scrollProgress");
 
 const nameInput = document.getElementById("name");
 const phoneInput = document.getElementById("phone");
@@ -59,6 +61,52 @@ function getDeviceId() {
 function setMessage(text, type = "") {
   message.textContent = text;
   message.className = type;
+}
+
+function setupPageLoader() {
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      document.body.classList.add("loaded");
+    }, 350);
+  });
+}
+
+function setupHeaderAndProgress() {
+  function update() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+
+    if (header) {
+      header.classList.toggle("scrolled", scrollTop > 20);
+    }
+
+    if (scrollProgress) {
+      scrollProgress.style.width = `${Math.min(percent, 100)}%`;
+    }
+  }
+
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+}
+
+function setupImageFallbacks() {
+  const images = document.querySelectorAll("img[data-fallback]");
+
+  images.forEach((img) => {
+    img.addEventListener(
+      "error",
+      () => {
+        const fallback = img.dataset.fallback;
+
+        if (fallback && img.src !== fallback) {
+          img.src = fallback;
+        }
+      },
+      { once: true }
+    );
+  });
 }
 
 async function loadServices() {
@@ -136,6 +184,7 @@ function setEmptyTimes(text) {
   timesContainer.innerHTML = "";
 
   const emptyText = document.createElement("p");
+
   emptyText.className = "empty-text";
   emptyText.textContent = text;
 
@@ -150,18 +199,22 @@ function createPaginationControls() {
   }
 
   const controls = document.createElement("div");
+
   controls.className = "pagination-controls";
 
   const prevButton = document.createElement("button");
+
   prevButton.type = "button";
   prevButton.className = "pagination-btn";
   prevButton.textContent = "← Dias anteriores";
 
   const indicator = document.createElement("div");
+
   indicator.className = "pagination-indicator";
   indicator.textContent = `Página ${currentPage + 1}`;
 
   const nextButton = document.createElement("button");
+
   nextButton.type = "button";
   nextButton.className = "pagination-btn";
   nextButton.textContent = "Próximos dias →";
@@ -374,6 +427,7 @@ async function loadTimes(date) {
       }
 
       const button = createTimeButton(time, Boolean(time) && available, reason);
+
       timesContainer.appendChild(button);
     });
   } catch (error) {
@@ -461,6 +515,7 @@ form.addEventListener("submit", async (event) => {
     form.reset();
 
     serviceInput.value = "";
+
     document.querySelectorAll(".service-option").forEach((item) => {
       item.classList.remove("active");
       item.setAttribute("aria-selected", "false");
@@ -510,23 +565,12 @@ function setupRevealAnimations() {
   });
 }
 
-function setupHeaderScroll() {
-  const updateHeader = () => {
-    if (window.scrollY > 20) {
-      header.classList.add("scrolled");
-    } else {
-      header.classList.remove("scrolled");
-    }
-  };
-
-  updateHeader();
-  window.addEventListener("scroll", updateHeader, { passive: true });
-}
-
 async function initializePage() {
+  setupPageLoader();
+  setupHeaderAndProgress();
+  setupImageFallbacks();
   getDeviceId();
   setupRevealAnimations();
-  setupHeaderScroll();
   await loadServices();
   await generateDays();
 }
