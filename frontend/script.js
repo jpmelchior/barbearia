@@ -1,5 +1,3 @@
-// frontend/script.js
-
 const API_URL = window.API_URL || "https://barbearia-ygxt.onrender.com/api";
 
 const DEVICE_ID_KEY = "barbearia_device_id";
@@ -9,6 +7,7 @@ const daysContainer = document.getElementById("daysContainer");
 const timesContainer = document.getElementById("timesContainer");
 const message = document.getElementById("message");
 const submitButton = form.querySelector(".submit-btn");
+const header = document.querySelector(".header");
 
 const nameInput = document.getElementById("name");
 const phoneInput = document.getElementById("phone");
@@ -55,18 +54,6 @@ function getDeviceId() {
   }
 
   return deviceId;
-}
-
-function formatISODate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function formatWeekday(date) {
-  return weekdayFormatter.format(date).replace(".", "");
 }
 
 function setMessage(text, type = "") {
@@ -149,7 +136,6 @@ function setEmptyTimes(text) {
   timesContainer.innerHTML = "";
 
   const emptyText = document.createElement("p");
-
   emptyText.className = "empty-text";
   emptyText.textContent = text;
 
@@ -164,17 +150,18 @@ function createPaginationControls() {
   }
 
   const controls = document.createElement("div");
-
-  controls.className = "pagination-controls reveal show";
+  controls.className = "pagination-controls";
 
   const prevButton = document.createElement("button");
-
   prevButton.type = "button";
   prevButton.className = "pagination-btn";
   prevButton.textContent = "← Dias anteriores";
 
-  const nextButton = document.createElement("button");
+  const indicator = document.createElement("div");
+  indicator.className = "pagination-indicator";
+  indicator.textContent = `Página ${currentPage + 1}`;
 
+  const nextButton = document.createElement("button");
   nextButton.type = "button";
   nextButton.className = "pagination-btn";
   nextButton.textContent = "Próximos dias →";
@@ -201,6 +188,7 @@ function createPaginationControls() {
   });
 
   controls.appendChild(prevButton);
+  controls.appendChild(indicator);
   controls.appendChild(nextButton);
 
   daysContainer.after(controls);
@@ -294,9 +282,8 @@ async function generateDays() {
       return;
     }
 
-    days.forEach((dayInfo, index) => {
+    days.forEach((dayInfo) => {
       const dayButton = createDayButton(dayInfo);
-      dayButton.style.animationDelay = `${index * 35}ms`;
       daysContainer.appendChild(dayButton);
     });
 
@@ -375,7 +362,7 @@ async function loadTimes(date) {
       return;
     }
 
-    times.forEach((item, index) => {
+    times.forEach((item) => {
       let time = item;
       let available = true;
       let reason = "Horário indisponível";
@@ -387,9 +374,6 @@ async function loadTimes(date) {
       }
 
       const button = createTimeButton(time, Boolean(time) && available, reason);
-
-      button.style.animationDelay = `${index * 30}ms`;
-
       timesContainer.appendChild(button);
     });
   } catch (error) {
@@ -472,7 +456,7 @@ form.addEventListener("submit", async (event) => {
       return;
     }
 
-    setMessage("Agendamento confirmado com sucesso! A Barbearia Prime agradece.", "success");
+    setMessage("Agendamento realizado com sucesso!", "success");
 
     form.reset();
 
@@ -502,16 +486,10 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-/* Animações de entrada */
-
 function setupRevealAnimations() {
-  const elements = document.querySelectorAll(
-    ".section-text, .info-card, .services > .tag, .services > h2, .service-card, .booking-left, .booking-form, .service-option, .footer"
-  );
+  const elements = document.querySelectorAll(".reveal");
 
-  elements.forEach((element) => {
-    element.classList.add("reveal");
-  });
+  if (!elements.length) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -532,9 +510,23 @@ function setupRevealAnimations() {
   });
 }
 
+function setupHeaderScroll() {
+  const updateHeader = () => {
+    if (window.scrollY > 20) {
+      header.classList.add("scrolled");
+    } else {
+      header.classList.remove("scrolled");
+    }
+  };
+
+  updateHeader();
+  window.addEventListener("scroll", updateHeader, { passive: true });
+}
+
 async function initializePage() {
   getDeviceId();
   setupRevealAnimations();
+  setupHeaderScroll();
   await loadServices();
   await generateDays();
 }
