@@ -1,5 +1,4 @@
 // backend/server.js
-
 require("dotenv").config();
 
 const crypto = require("crypto");
@@ -8,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+
 const db = require("./database");
 
 const app = express();
@@ -18,13 +18,15 @@ const TIME_ZONE = "America/Sao_Paulo";
 
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
 
-const MAX_APPOINTMENTS_PER_IP_PER_DAY = Number(
-  process.env.MAX_APPOINTMENTS_PER_IP_PER_DAY || 3
-);
+/*
+  REGRA IMPORTANTE:
+  O limite real contra fraude está em validateAntiAbuseRules().
+  Não dependa só de rate limit, pois rate limit controla tentativas,
+  mas não garante "1 cliente = 1 horário ativo".
+*/
 
 if (!ADMIN_USER || !ADMIN_PASSWORD) {
   console.error("ERRO: ADMIN_USER e ADMIN_PASSWORD são obrigatórios.");
@@ -235,11 +237,10 @@ function formatServicePrice(price) {
 async function getActiveServiceByName(name) {
   return dbGet(
     `
-    SELECT id, name, price, active
-    FROM services
-    WHERE name = ?
-    AND active = 1
-    LIMIT 1
+      SELECT id, name, price, active
+      FROM services
+      WHERE name = ? AND active = 1
+      LIMIT 1
     `,
     [name]
   );
@@ -303,7 +304,6 @@ function getBrazilHour() {
 
 function getBrazilNow() {
   const parts = getDatePartsInBrazil();
-
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
@@ -347,10 +347,10 @@ function timeToHour(timeString) {
 async function getBusinessHoursByWeekday(weekday) {
   return dbGet(
     `
-    SELECT weekday, label, is_open, open_time, close_time
-    FROM business_hours
-    WHERE weekday = ?
-    LIMIT 1
+      SELECT weekday, label, is_open, open_time, close_time
+      FROM business_hours
+      WHERE weekday = ?
+      LIMIT 1
     `,
     [weekday]
   );
@@ -368,7 +368,6 @@ async function getBusinessHoursForDate(dateString) {
 
 async function isOpenBusinessDate(dateString) {
   const hours = await getBusinessHoursForDate(dateString);
-
   return Boolean(hours && Number(hours.is_open) === 1);
 }
 
@@ -381,7 +380,6 @@ async function generateTimes(dateString) {
 
   const today = getTodayBrazilDate();
   const currentHour = getBrazilHour();
-
   const openHour = timeToHour(hours.open_time);
   const closeHour = timeToHour(hours.close_time);
 
@@ -501,6 +499,18 @@ function validateAppointmentPayload(body) {
     return { error: "Informe um horário válido." };
   }
 
+  /*
+    Bloqueio obrigatório:
+    Sem device_id, não deixa agendar.
+    Isso impede scripts simples ou frontend antigo sem identificação.
+  */
+  if (!appointment.device_id) {
+    return {
+      error:
+        "Não foi possível identificar seu dispositivo. Recarregue a página e tente novamente."
+    };
+  }
+
   return { appointment };
 }
 
@@ -600,59 +610,48 @@ async function validateBusinessHoursPayload(body) {
   };
 }
 
+/*
+  CORREÇÃO PRINCIPAL:
+  Antes o sistema bloqueava mesmo telefone/device apenas NO MESMO DIA.
+  Agora bloqueia qualquer novo agendamento se já existir um agendamento FUTURO ativo
+  com o mesmo WhatsApp, mesmo device_id ou mesmo IP.
+
+  Isso bloqueia:
+  - mesmo PC;
+  - mesmo celular;
+  - navegador anônimo no mesmo IP;
+  - outro aparelho usando o mesmo WhatsApp;
+  - PC e celular na mesma internet.
+*/
 async function validateAntiAbuseRules(appointment, metadata) {
-  const samePhone = await dbGet(
+  const today = getTodayBrazilDate();
+
+  const duplicatedAppointment = await dbGet(
     `
-    SELECT id FROM appointments
-    WHERE phone = ?
-    AND date = ?
-    AND status = 'scheduled'
-    LIMIT 1
+      SELECT id, name, phone, service, date, time, device_id, ip
+      FROM appointments
+      WHERE status = 'scheduled'
+        AND date >= ?
+        AND (
+          phone = ?
+          OR device_id = ?
+          OR ip = ?
+        )
+      LIMIT 1
     `,
-    [appointment.phone, appointment.date]
+    [
+      today,
+      appointment.phone,
+      appointment.device_id || "__sem_device__",
+      metadata.ip || "__sem_ip__"
+    ]
   );
 
-  if (samePhone) {
+  if (duplicatedAppointment) {
     return {
-      error: "Este WhatsApp já possui um agendamento nesse dia."
+      error:
+        "Você já possui um horário agendado. Para marcar outro horário, fale diretamente com a barbearia."
     };
-  }
-
-  if (appointment.device_id) {
-    const sameDevice = await dbGet(
-      `
-      SELECT id FROM appointments
-      WHERE device_id = ?
-      AND date = ?
-      AND status = 'scheduled'
-      LIMIT 1
-      `,
-      [appointment.device_id, appointment.date]
-    );
-
-    if (sameDevice) {
-      return {
-        error: "Este aparelho já possui um agendamento nesse dia."
-      };
-    }
-  }
-
-  if (metadata.ip) {
-    const ipUsage = await dbGet(
-      `
-      SELECT COUNT(*) AS total FROM appointments
-      WHERE ip = ?
-      AND date = ?
-      AND status = 'scheduled'
-      `,
-      [metadata.ip, appointment.date]
-    );
-
-    if (ipUsage && ipUsage.total >= MAX_APPOINTMENTS_PER_IP_PER_DAY) {
-      return {
-        error: "Muitos agendamentos foram feitos por essa conexão hoje. Tente novamente amanhã."
-      };
-    }
   }
 
   return null;
@@ -754,10 +753,10 @@ app.get("/api/services", async (req, res) => {
   try {
     const services = await dbAll(
       `
-      SELECT id, name, price, active
-      FROM services
-      WHERE active = 1
-      ORDER BY name ASC
+        SELECT id, name, price, active
+        FROM services
+        WHERE active = 1
+        ORDER BY name ASC
       `
     );
 
@@ -777,9 +776,9 @@ app.get("/api/admin/services", adminAuth, async (req, res) => {
   try {
     const services = await dbAll(
       `
-      SELECT id, name, price, active, created_at, updated_at
-      FROM services
-      ORDER BY active DESC, name ASC
+        SELECT id, name, price, active, created_at, updated_at
+        FROM services
+        ORDER BY active DESC, name ASC
       `
     );
 
@@ -810,8 +809,8 @@ app.post("/api/admin/services", adminAuth, async (req, res) => {
   try {
     const result = await dbRun(
       `
-      INSERT INTO services (name, price, active)
-      VALUES (?, ?, 1)
+        INSERT INTO services (name, price, active)
+        VALUES (?, ?, 1)
       `,
       [name, price]
     );
@@ -828,9 +827,7 @@ app.post("/api/admin/services", adminAuth, async (req, res) => {
     });
   } catch (error) {
     if (error.message && error.message.includes("UNIQUE")) {
-      return res.status(409).json({
-        error: "Já existe um serviço com esse nome."
-      });
+      return res.status(409).json({ error: "Já existe um serviço com esse nome." });
     }
 
     console.error("Erro em POST /api/admin/services:", error);
@@ -844,9 +841,7 @@ app.patch("/api/admin/services/:id", adminAuth, async (req, res) => {
   const price = normalizePrice(req.body.price);
 
   const active =
-    req.body.active === true ||
-    req.body.active === 1 ||
-    req.body.active === "1"
+    req.body.active === true || req.body.active === 1 || req.body.active === "1"
       ? 1
       : 0;
 
@@ -865,12 +860,9 @@ app.patch("/api/admin/services/:id", adminAuth, async (req, res) => {
   try {
     const result = await dbRun(
       `
-      UPDATE services
-      SET name = ?,
-          price = ?,
-          active = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+        UPDATE services
+        SET name = ?, price = ?, active = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
       `,
       [name, price, active, id]
     );
@@ -879,14 +871,10 @@ app.patch("/api/admin/services/:id", adminAuth, async (req, res) => {
       return res.status(404).json({ error: "Serviço não encontrado." });
     }
 
-    res.json({
-      message: "Serviço atualizado com sucesso."
-    });
+    res.json({ message: "Serviço atualizado com sucesso." });
   } catch (error) {
     if (error.message && error.message.includes("UNIQUE")) {
-      return res.status(409).json({
-        error: "Já existe um serviço com esse nome."
-      });
+      return res.status(409).json({ error: "Já existe um serviço com esse nome." });
     }
 
     console.error("Erro em PATCH /api/admin/services/:id:", error);
@@ -904,10 +892,9 @@ app.delete("/api/admin/services/:id", adminAuth, async (req, res) => {
   try {
     const result = await dbRun(
       `
-      UPDATE services
-      SET active = 0,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+        UPDATE services
+        SET active = 0, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
       `,
       [id]
     );
@@ -927,9 +914,9 @@ app.get("/api/business-hours", async (req, res) => {
   try {
     const rows = await dbAll(
       `
-      SELECT weekday, label, is_open, open_time, close_time
-      FROM business_hours
-      ORDER BY weekday ASC
+        SELECT weekday, label, is_open, open_time, close_time
+        FROM business_hours
+        ORDER BY weekday ASC
       `
     );
 
@@ -944,9 +931,9 @@ app.get("/api/admin/business-hours", adminAuth, async (req, res) => {
   try {
     const rows = await dbAll(
       `
-      SELECT id, weekday, label, is_open, open_time, close_time, created_at, updated_at
-      FROM business_hours
-      ORDER BY weekday ASC
+        SELECT id, weekday, label, is_open, open_time, close_time, created_at, updated_at
+        FROM business_hours
+        ORDER BY weekday ASC
       `
     );
 
@@ -972,12 +959,9 @@ app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
   try {
     const result = await dbRun(
       `
-      UPDATE business_hours
-      SET is_open = ?,
-          open_time = ?,
-          close_time = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE weekday = ?
+        UPDATE business_hours
+        SET is_open = ?, open_time = ?, close_time = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE weekday = ?
       `,
       [
         businessHour.is_open,
@@ -999,7 +983,11 @@ app.patch("/api/admin/business-hours/:weekday", adminAuth, async (req, res) => {
 });
 
 app.put("/api/admin/business-hours", adminAuth, async (req, res) => {
-  const items = Array.isArray(req.body) ? req.body : Array.isArray(req.body.hours) ? req.body.hours : [];
+  const items = Array.isArray(req.body)
+    ? req.body
+    : Array.isArray(req.body.hours)
+      ? req.body.hours
+      : [];
 
   if (!items.length) {
     return res.status(400).json({ error: "Envie os horários da semana." });
@@ -1015,12 +1003,9 @@ app.put("/api/admin/business-hours", adminAuth, async (req, res) => {
 
       await dbRun(
         `
-        UPDATE business_hours
-        SET is_open = ?,
-            open_time = ?,
-            close_time = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE weekday = ?
+          UPDATE business_hours
+          SET is_open = ?, open_time = ?, close_time = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE weekday = ?
         `,
         [
           businessHour.is_open,
@@ -1049,11 +1034,13 @@ app.get("/api/today", (req, res) => {
 app.get("/api/days", async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 60);
   const page = Math.max(Number(req.query.page || 0), 0);
+
   const today = getTodayBrazilDate();
   const days = [];
 
   let index = 0;
   let skippedOpenDays = 0;
+
   const skip = page * limit;
 
   try {
@@ -1125,9 +1112,9 @@ app.get("/api/times", async (req, res) => {
 
     const appointments = await dbAll(
       `
-      SELECT time FROM appointments
-      WHERE date = ?
-      AND status = 'scheduled'
+        SELECT time
+        FROM appointments
+        WHERE date = ? AND status = 'scheduled'
       `,
       [date]
     );
@@ -1210,17 +1197,13 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     const selectedService = await getActiveServiceByName(appointment.service);
 
     if (!selectedService) {
-      return res.status(400).json({
-        error: "Serviço inválido ou indisponível."
-      });
+      return res.status(400).json({ error: "Serviço inválido ou indisponível." });
     }
 
     const availableTimes = await generateTimes(appointment.date);
 
     if (!availableTimes.includes(appointment.time)) {
-      return res.status(400).json({
-        error: "Esse horário já passou ou não está disponível."
-      });
+      return res.status(400).json({ error: "Esse horário já passou ou não está disponível." });
     }
 
     const blocks = await dbAll(
@@ -1246,14 +1229,15 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     const antiAbuseError = await validateAntiAbuseRules(appointment, metadata);
 
     if (antiAbuseError) {
-      return res.status(429).json(antiAbuseError);
+      return res.status(409).json(antiAbuseError);
     }
 
     const result = await dbRun(
       `
-      INSERT INTO appointments
-      (name, phone, service, date, time, status, ip, device_id, user_agent)
-      VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)
+        INSERT INTO appointments
+          (name, phone, service, date, time, status, ip, device_id, user_agent)
+        VALUES
+          (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)
       `,
       [
         appointment.name,
@@ -1262,7 +1246,7 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
         appointment.date,
         appointment.time,
         metadata.ip,
-        appointment.device_id || null,
+        appointment.device_id,
         metadata.user_agent
       ]
     );
@@ -1277,15 +1261,11 @@ app.post("/api/appointments", appointmentLimiter, async (req, res) => {
     });
   } catch (error) {
     if (error.message && error.message.includes("UNIQUE")) {
-      return res.status(409).json({
-        error: "Horário indisponível."
-      });
+      return res.status(409).json({ error: "Horário indisponível." });
     }
 
     console.error("Erro em POST /api/appointments:", error);
-    res.status(500).json({
-      error: "Erro ao criar agendamento."
-    });
+    res.status(500).json({ error: "Erro ao criar agendamento." });
   }
 });
 
@@ -1293,9 +1273,10 @@ app.get("/api/admin/appointments", adminAuth, async (req, res) => {
   try {
     const rows = await dbAll(
       `
-      SELECT * FROM appointments
-      WHERE status IS NULL OR status != 'hidden'
-      ORDER BY date ASC, time ASC
+        SELECT *
+        FROM appointments
+        WHERE status IS NULL OR status != 'hidden'
+        ORDER BY date ASC, time ASC
       `
     );
 
@@ -1316,10 +1297,9 @@ app.delete("/api/admin/appointments/:id", adminAuth, async (req, res) => {
   try {
     const result = await dbRun(
       `
-      UPDATE appointments
-      SET status = 'cancelled',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+        UPDATE appointments
+        SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
       `,
       [id]
     );
@@ -1376,12 +1356,13 @@ app.patch("/api/admin/appointments/:id/status", adminAuth, async (req, res) => {
     if (status === "scheduled") {
       const conflict = await dbGet(
         `
-        SELECT id FROM appointments
-        WHERE date = ?
-        AND time = ?
-        AND status = 'scheduled'
-        AND id != ?
-        LIMIT 1
+          SELECT id
+          FROM appointments
+          WHERE date = ?
+            AND time = ?
+            AND status = 'scheduled'
+            AND id != ?
+          LIMIT 1
         `,
         [appointment.date, appointment.time, id]
       );
@@ -1403,10 +1384,9 @@ app.patch("/api/admin/appointments/:id/status", adminAuth, async (req, res) => {
 
     const result = await dbRun(
       `
-      UPDATE appointments
-      SET status = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+        UPDATE appointments
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
       `,
       [status, id]
     );
@@ -1415,9 +1395,7 @@ app.patch("/api/admin/appointments/:id/status", adminAuth, async (req, res) => {
       return res.status(404).json({ error: "Agendamento não encontrado." });
     }
 
-    res.json({
-      message: statusMessages[status] || "Status atualizado com sucesso."
-    });
+    res.json({ message: statusMessages[status] || "Status atualizado com sucesso." });
   } catch (error) {
     console.error("Erro em PATCH /api/admin/appointments/:id/status:", error);
     res.status(500).json({ error: "Erro ao atualizar status do agendamento." });
@@ -1452,16 +1430,16 @@ app.post("/api/admin/blocks", adminAuth, async (req, res) => {
       const existingBlock = await dbGet(
         block.time
           ? `
-            SELECT id FROM blocked_times
-            WHERE date = ?
-            AND (time IS NULL OR time = ?)
-            LIMIT 1
+              SELECT id
+              FROM blocked_times
+              WHERE date = ? AND (time IS NULL OR time = ?)
+              LIMIT 1
             `
           : `
-            SELECT id FROM blocked_times
-            WHERE date = ?
-            AND time IS NULL
-            LIMIT 1
+              SELECT id
+              FROM blocked_times
+              WHERE date = ? AND time IS NULL
+              LIMIT 1
             `,
         block.time ? [date, block.time] : [date]
       );
@@ -1489,7 +1467,9 @@ app.post("/api/admin/blocks", adminAuth, async (req, res) => {
       message:
         created === 1
           ? "Bloqueio criado com sucesso."
-          : `${created} bloqueios criados com sucesso.${skipped ? ` ${skipped} já existiam.` : ""}`,
+          : `${created} bloqueios criados com sucesso.${
+              skipped ? ` ${skipped} já existiam.` : ""
+            }`,
       block: {
         startDate: block.startDate,
         endDate: block.endDate,
